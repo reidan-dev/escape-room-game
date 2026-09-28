@@ -1,3 +1,4 @@
 pandas
 PyYAML
 jupyter
+qrcode[pil]
