@@ -1,0 +1,11 @@
+rules:
+* First name is not 3 letters long.
+* First name starts with a consonant.
+* Last name has 5 or more letters.
+* Last name does not end in a vowel.
+* First name contains the letter A.
+* First and last names do not start with the same letter.
+* First name has more letters than the last name.
+* First and last names have the same number of vowels.
+* First and last names share at least one letter.
+* The first and last names have exactly two letters in common, and those letters appear in the same order in both names.

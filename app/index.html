@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cure Line</title>
+<style>
+  :root {
+    --bezel: #17181c;
+    --screen-bg: #0d0f14;
+    --accent: #35d07f;
+    --accent-dim: #1f7a4c;
+    --danger: #e5484d;
+    --text: #f4f6f8;
+    --text-dim: #9aa1ab;
+    --key-bg: #20232b;
+    --key-bg-active: #2c3039;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(circle at 50% 20%, #2a2d38, #0a0b0f 70%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .phone-frame {
+    width: min(92vw, 360px);
+    height: min(94vh, 720px);
+    background: var(--bezel);
+    border-radius: 46px;
+    padding: 14px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 2px #2b2e37;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen {
+    flex: 1;
+    background: var(--screen-bg);
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 22px 4px;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .calls-indicator {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--accent);
+    background: rgba(53,208,127,0.1);
+    border: 1px solid rgba(53,208,127,0.3);
+    border-radius: 20px;
+    margin: 6px 20px 0;
+    padding: 5px 10px;
+  }
+  .calls-indicator.depleted {
+    color: var(--danger);
+    background: rgba(229,72,77,0.1);
+    border-color: rgba(229,72,77,0.3);
+  }
+
+  .view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .view.active { display: flex; }
+
+  /* ---------- Dial view ---------- */
+  #view-dial { padding: 6px 20px 18px; justify-content: space-between; }
+  .display-wrap { text-align: center; padding-top: 18px; min-height: 60px; }
+  .display {
+    font-size: 30px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    min-height: 40px;
+  }
+  .display.placeholder { color: var(--text-dim); font-weight: 400; font-size: 16px; }
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 6px 0;
+  }
+  .key {
+    background: var(--key-bg);
+    border: none;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+  }
+  .key:active { background: var(--key-bg-active); }
+  .key .sub { font-size: 9px; letter-spacing: 1px; color: var(--text-dim); margin-top: 2px; }
+  .dial-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    margin-top: 6px;
+  }
+  .btn-clear {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    width: 56px;
+  }
+  .btn-call {
+    background: var(--accent);
+    border: none;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(53,208,127,0.4);
+  }
+  .btn-call:disabled { background: var(--accent-dim); box-shadow: none; opacity: 0.5; cursor: default; }
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 22px;
+    cursor: pointer;
+    width: 56px;
+  }
+
+  /* ---------- Calling / Result view ---------- */
+  #view-call, #view-result {
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 26px 28px;
+    text-align: center;
+  }
+  .calling-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  .caller-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #3a3f4b, #1c1e24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  .caller-avatar svg {
+    display: block;
+    width: 40px;
+    height: 40px;
+  }
+  .pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .calling-name { font-size: 22px; font-weight: 600; }
+  .calling-number { font-size: 14px; color: var(--text-dim); letter-spacing: 1px; margin-top: 2px; }
+  .calling-status { color: var(--text-dim); font-size: 14px; margin-top: 6px; }
+  .call-end-btn {
+    background: var(--danger);
+    border: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+    margin-top: 20px;
+  }
+
+  .result-body { flex: 1; display: flex; flex-direction: column; justify-content: center; width: 100%; }
+  .result-emoji { font-size: 46px; margin-bottom: 10px; }
+  .result-name { font-size: 19px; font-weight: 600; margin-bottom: 2px; }
+  .result-number { color: var(--text-dim); font-size: 13px; margin-bottom: 14px; }
+  .result-text.not-found {
+    background: rgba(255,255,255,0.03);
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .result-text {
+    font-size: 14px;
+    line-height: 1.45;
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin: 0 4px;
+  }
+  .result-text.target {
+    background: rgba(53,208,127,0.12);
+    border: 1px solid rgba(53,208,127,0.35);
+  }
+  clue {
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .cure-note {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .end-call-wide {
+    margin-top: 18px;
+    background: var(--danger);
+    border: none;
+    color: white;
+    padding: 12px 28px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="screen">
+    <div class="status-bar">
+      <span id="clock">9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="calls-indicator" id="calls-indicator">Free Calls: 15/15</div>
+
+    <!-- Dial pad view -->
+    <div id="view-dial" class="view active">
+      <div class="display-wrap">
+        <div id="display" class="display placeholder">Enter Number</div>
+      </div>
+      <div>
+        <div class="keypad" id="keypad"></div>
+        <div class="dial-actions">
+          <button class="btn-back" id="btn-back" aria-label="backspace">⌫</button>
+          <button class="btn-call" id="btn-call" disabled aria-label="call">📞</button>
+          <button class="btn-clear" id="btn-clear">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calling view -->
+    <div id="view-call" class="view">
+      <div></div>
+      <div class="calling-body">
+        <div class="caller-avatar pulse">
+          <svg viewBox="0 0 24 24" fill="#35d07f" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+          </svg>
+        </div>
+        <div class="calling-name" id="calling-name"></div>
+        <div class="calling-number" id="calling-number"></div>
+        <div class="calling-status">Calling...</div>
+      </div>
+      <button class="call-end-btn" id="btn-cancel-call" aria-label="end call">📵</button>
+    </div>
+
+    <!-- Result view -->
+    <div id="view-result" class="view">
+      <div class="result-body">
+        <div class="result-emoji" id="result-emoji">🙂</div>
+        <div class="result-name" id="result-name"></div>
+        <div class="result-number" id="result-number"></div>
+        <div class="result-text" id="result-text"></div>
+      </div>
+      <button class="end-call-wide" id="btn-end-call">End Call</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PHONEBOOK = [{"phone": "218-7812", "name": "Dakila Abad", "role": "none", "scriptIndex": 29}, {"phone": "629-5780", "name": "Rochelle Abad", "role": "none", "scriptIndex": 78}, {"phone": "339-3300", "name": "Sherilyn Abad", "role": "none", "scriptIndex": 55}, {"phone": "673-8889", "name": "Ysabel Abad", "role": "none", "scriptIndex": 42}, {"phone": "289-4891", "name": "Josefa Abella", "role": "none", "scriptIndex": 79}, {"phone": "965-5050", "name": "Cristina Abrigo", "role": "none", "scriptIndex": 24}, {"phone": "422-2252", "name": "Bayani Agbayani", "role": "none", "scriptIndex": 62}, {"phone": "209-4938", "name": "Bing Agbayani", "role": "none", "scriptIndex": 76}, {"phone": "777-2615", "name": "Junjun Agbayani", "role": "none", "scriptIndex": 61}, {"phone": "377-3287", "name": "Rovilson Aguilar", "role": "none", "scriptIndex": 20}, {"phone": "100-4239", "name": "Divine Agustin", "role": "none", "scriptIndex": 51}, {"phone": "724-2248", "name": "Drexler Alcantara", "role": "none", "scriptIndex": 26}, {"phone": "017-8673", "name": "Renz Alcantara", "role": "none", "scriptIndex": 79}, {"phone": "268-3534", "name": "Carmen Alejandro", "role": "none", "scriptIndex": 27}, {"phone": "366-3898", "name": "Elton Alejandro", "role": "none", "scriptIndex": 85}, {"phone": "725-8751", "name": "Leizel Alejandro", "role": "none", "scriptIndex": 81}, {"phone": "216-3113", "name": "Leni Alejandro", "role": "none", "scriptIndex": 59}, {"phone": "270-8791", "name": "Queenie Alejandro", "role": "none", "scriptIndex": 78}, {"phone": "178-4347", "name": "Mabel Almario", "role": "none", "scriptIndex": 63}, {"phone": "095-4820", "name": "Rosa Almario", "role": "none", "scriptIndex": 89}, {"phone": "377-5427", "name": "Sergio Almario", "role": "none", "scriptIndex": 15}, {"phone": "006-8719", "name": "Tessie Almario", "role": "none", "scriptIndex": 29}, {"phone": "262-3533", "name": "Christian Alonzo", "role": "none", "scriptIndex": 96}, {"phone": "470-1275", "name": "Roel Alonzo", "role": "none", "scriptIndex": 58}, {"phone": "767-8837", "name": "Rustom Alonzo", "role": "none", "scriptIndex": 73}, {"phone": "636-2496", "name": "Ivy Alvarez", "role": "none", "scriptIndex": 49}, {"phone": "869-5620", "name": "Donabel Amurao", "role": "none", "scriptIndex": 36}, {"phone": "092-6442", "name": "Vergel Amurao", "role": "none", "scriptIndex": 5}, {"phone": "759-4506", "name": "Dolores Andrada", "role": "none", "scriptIndex": 60}, {"phone": "675-3164", "name": "Jerico Andrada", "role": "none", "scriptIndex": 76}, {"phone": "183-5442", "name": "Reyland Andrada", "role": "none", "scriptIndex": 21}, {"phone": "753-3048", "name": "Donabel Angara", "role": "none", "scriptIndex": 59}, {"phone": "996-9975", "name": "Edgardo Angeles", "role": "none", "scriptIndex": 21}, {"phone": "118-4279", "name": "Maria Angeles", "role": "none", "scriptIndex": 94}, {"phone": "755-3232", "name": "Queenie Angeles", "role": "none", "scriptIndex": 31}, {"phone": "972-4051", "name": "Arnel Antonio", "role": "none", "scriptIndex": 27}, {"phone": "343-7034", "name": "Dranreb Antonio", "role": "none", "scriptIndex": 28}, {"phone": "824-5168", "name": "Jessa Aquino", "role": "none", "scriptIndex": 79}, {"phone": "237-4720", "name": "Kristine Aquino", "role": "none", "scriptIndex": 13}, {"phone": "460-4305", "name": "Laarni Aquino", "role": "none", "scriptIndex": 37}, {"phone": "129-1101", "name": "Roi Aranas", "role": "none", "scriptIndex": 85}, {"phone": "566-6870", "name": "Gloria Araneta", "role": "none", "scriptIndex": 84}, {"phone": "129-8229", "name": "Vener Araneta", "role": "none", "scriptIndex": 60}, {"phone": "879-7711", "name": "Pablo Arceo", "role": "none", "scriptIndex": 91}, {"phone": "092-0920", "name": "Toto Arceo", "role": "none", "scriptIndex": 82}, {"phone": "323-5080", "name": "Ivy Arriola", "role": "none", "scriptIndex": 69}, {"phone": "744-5776", "name": "Ronnie Arriola", "role": "none", "scriptIndex": 61}, {"phone": "360-8945", "name": "Elvis Asuncion", "role": "none", "scriptIndex": 95}, {"phone": "411-7191", "name": "Jinky Asuncion", "role": "none", "scriptIndex": 37}, {"phone": "747-7527", "name": "Jose Asuncion", "role": "none", "scriptIndex": 96}, {"phone": "003-5464", "name": "Juliet Asuncion", "role": "none", "scriptIndex": 42}, {"phone": "650-6338", "name": "Rustom Asuncion", "role": "none", "scriptIndex": 72}, {"phone": "332-0919", "name": "Antonio Atienza", "role": "none", "scriptIndex": 21}, {"phone": "971-9449", "name": "Christopher Atienza", "role": "none", "scriptIndex": 49}, {"phone": "995-5642", "name": "Vener Ayala", "role": "none", "scriptIndex": 92}, {"phone": "805-5464", "name": "Andres Bagayas", "role": "none", "scriptIndex": 50}, {"phone": "172-9402", "name": "Roxanne Bagayas", "role": "none", "scriptIndex": 92}, {"phone": "570-4082", "name": "Rubylyn Bagayas", "role": "none", "scriptIndex": 8}, {"phone": "159-2579", "name": "Claudine Bagsic", "role": "none", "scriptIndex": 56}, {"phone": "583-9204", "name": "Ranilo Bagsic", "role": "none", "scriptIndex": 57}, {"phone": "208-4375", "name": "Ronald Bagsic", "role": "none", "scriptIndex": 84}, {"phone": "405-8224", "name": "Reymark Balagtas", "role": "none", "scriptIndex": 57}, {"phone": "511-9287", "name": "Nanette Balatbat", "role": "none", "scriptIndex": 8}, {"phone": "464-2161", "name": "Ronnie Balatbat", "role": "none", "scriptIndex": 86}, {"phone": "983-8320", "name": "Florendo Baldoza", "role": "none", "scriptIndex": 97}, {"phone": "593-8883", "name": "Jea Baldoza", "role": "none", "scriptIndex": 58}, {"phone": "828-7728", "name": "Justine Baldoza", "role": "none", "scriptIndex": 20}, {"phone": "575-6761", "name": "Rubylyn Baldoza", "role": "none", "scriptIndex": 17}, {"phone": "971-6520", "name": "Arnel Balingit", "role": "none", "scriptIndex": 54}, {"phone": "583-5747", "name": "Jamila Balingit", "role": "none", "scriptIndex": 53}, {"phone": "022-2420", "name": "Mabel Balingit", "role": "none", "scriptIndex": 57}, {"phone": "632-7916", "name": "Odette Balingit", "role": "none", "scriptIndex": 54}, {"phone": "848-8972", "name": "Dolores Baluyot", "role": "none", "scriptIndex": 49}, {"phone": "683-1936", "name": "Jhoana Baluyot", "role": "none", "scriptIndex": 61}, {"phone": "407-4520", "name": "Ming Baluyot", "role": "none", "scriptIndex": 12}, {"phone": "089-4583", "name": "Shiela Baluyot", "role": "none", "scriptIndex": 24}, {"phone": "487-7344", "name": "Donabel Banaag", "role": "none", "scriptIndex": 92}, {"phone": "927-0514", "name": "Jessa Baraquia", "role": "none", "scriptIndex": 51}, {"phone": "724-2474", "name": "Jewel Baraquia", "role": "none", "scriptIndex": 5}, {"phone": "307-0732", "name": "Luzviminda Baraquia", "role": "none", "scriptIndex": 25}, {"phone": "353-3950", "name": "Milagros Baraquia", "role": "none", "scriptIndex": 84}, {"phone": "480-7245", "name": "Romeo Baraquia", "role": "none", "scriptIndex": 95}, {"phone": "956-7734", "name": "Bogart Batac", "role": "none", "scriptIndex": 35}, {"phone": "543-9228", "name": "Estelita Batac", "role": "none", "scriptIndex": 13}, {"phone": "849-9080", "name": "Jamila Batac", "role": "none", "scriptIndex": 99}, {"phone": "061-2718", "name": "Esperanza Batungbakal", "role": "none", "scriptIndex": 44}, {"phone": "526-3899", "name": "Maria Batungbakal", "role": "none", "scriptIndex": 27}, {"phone": "192-9626", "name": "Arnel Bautista", "role": "none", "scriptIndex": 20}, {"phone": "550-3492", "name": "Dennis Bautista", "role": "none", "scriptIndex": 77}, {"phone": "382-6481", "name": "Nesty Bautista", "role": "none", "scriptIndex": 34}, {"phone": "920-1323", "name": "Ronilo Bautista", "role": "none", "scriptIndex": 13}, {"phone": "017-9623", "name": "Ryzza Bautista", "role": "none", "scriptIndex": 7}, {"phone": "480-4342", "name": "Flordeliza Bayani", "role": "none", "scriptIndex": 35}, {"phone": "022-1056", "name": "Jonel Bayani", "role": "none", "scriptIndex": 42}, {"phone": "144-3696", "name": "Rustan Bayani", "role": "none", "scriptIndex": 29}, {"phone": "939-9243", "name": "Neneng Belmonte", "role": "none", "scriptIndex": 13}, {"phone": "335-4843", "name": "Dexter Beltran", "role": "none", "scriptIndex": 77}, {"phone": "256-3216", "name": "Kenneth Beltran", "role": "none", "scriptIndex": 66}, {"phone": "440-9870", "name": "Rigor Beltran", "role": "none", "scriptIndex": 79}, {"phone": "699-8835", "name": "Ompong Bernardo", "role": "none", "scriptIndex": 89}, {"phone": "658-7022", "name": "Angelo Binay", "role": "none", "scriptIndex": 88}, {"phone": "749-7962", "name": "Christian Bonghanoy", "role": "none", "scriptIndex": 95}, {"phone": "247-6658", "name": "Honey Bonghanoy", "role": "none", "scriptIndex": 50}, {"phone": "254-1940", "name": "Leni Bonghanoy", "role": "none", "scriptIndex": 57}, {"phone": "790-4839", "name": "Orland Bonghanoy", "role": "none", "scriptIndex": 15}, {"phone": "594-1565", "name": "Rowel Bonghanoy", "role": "none", "scriptIndex": 65}, {"phone": "918-1646", "name": "Jea Bonifacio", "role": "none", "scriptIndex": 33}, {"phone": "449-1923", "name": "Mercy Bonifacio", "role": "none", "scriptIndex": 92}, {"phone": "447-1734", "name": "Neneng Buenaventura", "role": "none", "scriptIndex": 4}, {"phone": "851-1398", "name": "Carmen Buenavista", "role": "none", "scriptIndex": 38}, {"phone": "161-4984", "name": "Drexler Buenavista", "role": "none", "scriptIndex": 44}, {"phone": "728-4066", "name": "Ferdie Buenavista", "role": "none", "scriptIndex": 36}, {"phone": "920-8361", "name": "Tintin Buenavista", "role": "none", "scriptIndex": 96}, {"phone": "948-3872", "name": "Amboy Cabahug", "role": "none", "scriptIndex": 90}, {"phone": "223-3811", "name": "Apolinario Cabahug", "role": "none", "scriptIndex": 49}, {"phone": "415-6213", "name": "Araw Cabahug", "role": "none", "scriptIndex": 32}, {"phone": "649-6939", "name": "Benigno Cabahug", "role": "none", "scriptIndex": 44}, {"phone": "548-3120", "name": "Noli Cabahug", "role": "none", "scriptIndex": 54}, {"phone": "473-1669", "name": "Jocelyn Cabrera", "role": "none", "scriptIndex": 12}, {"phone": "403-6114", "name": "Elmer Cachero", "role": "none", "scriptIndex": 92}, {"phone": "367-5635", "name": "Orland Cachero", "role": "none", "scriptIndex": 85}, {"phone": "641-7529", "name": "Baby Cadiz", "role": "none", "scriptIndex": 92}, {"phone": "447-3803", "name": "Bimbo Cadiz", "role": "none", "scriptIndex": 22}, {"phone": "702-6018", "name": "Neneng Cadiz", "role": "none", "scriptIndex": 24}, {"phone": "812-1874", "name": "Rodel Cadiz", "role": "none", "scriptIndex": 18}, {"phone": "778-1646", "name": "Rodrigo Cadiz", "role": "none", "scriptIndex": 47}, {"phone": "852-3180", "name": "Kaye Calderon", "role": "none", "scriptIndex": 0}, {"phone": "895-7213", "name": "Maria Calderon", "role": "none", "scriptIndex": 28}, {"phone": "320-6022", "name": "Dexter Calma", "role": "none", "scriptIndex": 67}, {"phone": "149-4193", "name": "Jhoana Calma", "role": "none", "scriptIndex": 27}, {"phone": "830-5626", "name": "Rosanna Calma", "role": "none", "scriptIndex": 91}, {"phone": "893-0200", "name": "Toto Calma", "role": "none", "scriptIndex": 7}, {"phone": "210-8680", "name": "Liwayway Camposano", "role": "none", "scriptIndex": 84}, {"phone": "591-8313", "name": "Michelle Camposano", "role": "none", "scriptIndex": 22}, {"phone": "797-6965", "name": "Aldrin Canonizado", "role": "none", "scriptIndex": 71}, {"phone": "940-1578", "name": "Gloria Canonizado", "role": "none", "scriptIndex": 23}, {"phone": "138-4991", "name": "Rowel Canonizado", "role": "none", "scriptIndex": 2}, {"phone": "610-7119", "name": "Arman Capistrano", "role": "none", "scriptIndex": 90}, {"phone": "787-4067", "name": "Claudine Capistrano", "role": "none", "scriptIndex": 28}, {"phone": "630-9614", "name": "Erap Capistrano", "role": "none", "scriptIndex": 2}, {"phone": "358-9113", "name": "Jerico Capistrano", "role": "none", "scriptIndex": 32}, {"phone": "856-8189", "name": "Bonifacio Carbonell", "role": "none", "scriptIndex": 87}, {"phone": "866-8622", "name": "Esperanza Carbonell", "role": "none", "scriptIndex": 95}, {"phone": "794-4720", "name": "Ricardo Carbonell", "role": "none", "scriptIndex": 24}, {"phone": "077-2442", "name": "Allan Cariaga", "role": "none", "scriptIndex": 12}, {"phone": "951-5947", "name": "Ana Cariaga", "role": "none", "scriptIndex": 83}, {"phone": "586-1871", "name": "Wilma Cariaga", "role": "none", "scriptIndex": 7}, {"phone": "472-1924", "name": "Jerome Carino", "role": "none", "scriptIndex": 37}, {"phone": "414-0341", "name": "Kimberly Carino", "role": "none", "scriptIndex": 40}, {"phone": "780-4564", "name": "Noel Carino", "role": "none", "scriptIndex": 51}, {"phone": "353-7043", "name": "Yolanda Carino", "role": "none", "scriptIndex": 17}, {"phone": "911-1753", "name": "Jose Casimiro", "role": "none", "scriptIndex": 92}, {"phone": "696-3365", "name": "Ronald Casimiro", "role": "none", "scriptIndex": 88}, {"phone": "738-3155", "name": "Jewel Castro", "role": "none", "scriptIndex": 9}, {"phone": "760-8779", "name": "Lovely Castro", "role": "none", "scriptIndex": 70}, {"phone": "514-0862", "name": "Nova Castro", "role": "none", "scriptIndex": 31}, {"phone": "964-9333", "name": "Rayver Castro", "role": "none", "scriptIndex": 47}, {"phone": "253-3681", "name": "Rosario Castro", "role": "none", "scriptIndex": 36}, {"phone": "012-1010", "name": "Erwin Catapang", "role": "none", "scriptIndex": 26}, {"phone": "971-7450", "name": "Honey Catapang", "role": "none", "scriptIndex": 50}, {"phone": "951-2588", "name": "Ambrosio Cayabyab", "role": "none", "scriptIndex": 67}, {"phone": "530-2507", "name": "Bing Cayabyab", "role": "none", "scriptIndex": 26}, {"phone": "603-6291", "name": "Erwin Cayabyab", "role": "none", "scriptIndex": 54}, {"phone": "291-1374", "name": "Zaldy Cayabyab", "role": "none", "scriptIndex": 27}, {"phone": "759-6897", "name": "Benigno Cayetano", "role": "none", "scriptIndex": 56}, {"phone": "995-5194", "name": "Cherrie Cayetano", "role": "none", "scriptIndex": 89}, {"phone": "484-1874", "name": "Jhun Cayetano", "role": "none", "scriptIndex": 30}, {"phone": "805-9250", "name": "Jinggoy Cayetano", "role": "none", "scriptIndex": 9}, {"phone": "640-4961", "name": "Juan Cayetano", "role": "none", "scriptIndex": 4}, {"phone": "767-4403", "name": "Nova Cayetano", "role": "none", "scriptIndex": 61}, {"phone": "899-9032", "name": "May Ceballos", "role": "none", "scriptIndex": 91}, {"phone": "443-8238", "name": "Gregorio Centeno", "role": "none", "scriptIndex": 94}, {"phone": "202-6563", "name": "Jenina Centeno", "role": "none", "scriptIndex": 30}, {"phone": "607-3705", "name": "Chesca Chico", "role": "none", "scriptIndex": 41}, {"phone": "089-3070", "name": "Dexter Chico", "role": "none", "scriptIndex": 59}, {"phone": "871-8261", "name": "Trinidad Chua", "role": "none", "scriptIndex": 83}, {"phone": "652-6461", "name": "Virgie Chua", "role": "none", "scriptIndex": 60}, {"phone": "884-1143", "name": "Wilhelmina Clemente", "role": "none", "scriptIndex": 74}, {"phone": "730-5456", "name": "Arman Cojuangco", "role": "none", "scriptIndex": 94}, {"phone": "154-3788", "name": "Christopher Cojuangco", "role": "none", "scriptIndex": 20}, {"phone": "039-4700", "name": "Eufrocina Cojuangco", "role": "none", "scriptIndex": 41}, {"phone": "782-4186", "name": "Jasmine Cojuangco", "role": "none", "scriptIndex": 48}, {"phone": "391-2181", "name": "Lea Cojuangco", "role": "none", "scriptIndex": 90}, {"phone": "429-3267", "name": "Pao Cojuangco", "role": "none", "scriptIndex": 55}, {"phone": "046-0609", "name": "Donita Coloma", "role": "none", "scriptIndex": 20}, {"phone": "737-8954", "name": "Gina Coloma", "role": "none", "scriptIndex": 80}, {"phone": "252-9197", "name": "Jose Coloma", "role": "none", "scriptIndex": 53}, {"phone": "191-5154", "name": "Kim Coloma", "role": "none", "scriptIndex": 35}, {"phone": "432-3006", "name": "Rosa Coloma", "role": "none", "scriptIndex": 90}, {"phone": "335-5218", "name": "Ysabel Coloma", "role": "none", "scriptIndex": 27}, {"phone": "758-0502", "name": "Cesar Corpuz", "role": "none", "scriptIndex": 55}, {"phone": "869-9954", "name": "Apolinario Corral", "role": "none", "scriptIndex": 11}, {"phone": "016-4272", "name": "Jenina Cruz", "role": "none", "scriptIndex": 95}, {"phone": "728-5277", "name": "Jocelyn Cruz", "role": "none", "scriptIndex": 12}, {"phone": "807-9764", "name": "Manuel Cuenca", "role": "none", "scriptIndex": 13}, {"phone": "307-6167", "name": "Remedios Custodio", "role": "none", "scriptIndex": 29}, {"phone": "457-8824", "name": "Tintin Custodio", "role": "none", "scriptIndex": 74}, {"phone": "152-9221", "name": "Bimbo Dacanay", "role": "none", "scriptIndex": 23}, {"phone": "006-6718", "name": "Jinky Dacanay", "role": "none", "scriptIndex": 45}, {"phone": "980-1013", "name": "Vicky Dacanay", "role": "none", "scriptIndex": 27}, {"phone": "642-2621", "name": "Dolly Dalisay", "role": "none", "scriptIndex": 96}, {"phone": "382-2646", "name": "Ivan Dalisay", "role": "none", "scriptIndex": 51}, {"phone": "389-2527", "name": "Jovit Dalisay", "role": "none", "scriptIndex": 26}, {"phone": "703-7770", "name": "Odette Dalisay", "role": "none", "scriptIndex": 75}, {"phone": "166-2962", "name": "Ompong Dalisay", "role": "none", "scriptIndex": 15}, {"phone": "108-2693", "name": "Diwata Damasco", "role": "clue", "scriptIndex": 47, "script": "Not me, sorry! Pero FYI, <clue>may letrang A sa first name niya</clue>, parang 'Maria' o 'Angela', ang dami talagang A."}, {"phone": "079-4846", "name": "Erap Damasco", "role": "none", "scriptIndex": 50}, {"phone": "672-7900", "name": "Jasmine Damasco", "role": "none", "scriptIndex": 24}, {"phone": "194-4861", "name": "Tessie Damasco", "role": "none", "scriptIndex": 34}, {"phone": "983-1625", "name": "Bogart Dandan", "role": "none", "scriptIndex": 6}, {"phone": "002-6693", "name": "Cherry Dandan", "role": "none", "scriptIndex": 34}, {"phone": "245-2847", "name": "Christopher Dandan", "role": "none", "scriptIndex": 91}, {"phone": "749-7157", "name": "Emilio Dandan", "role": "none", "scriptIndex": 60}, {"phone": "510-8433", "name": "Honey Dantes", "role": "none", "scriptIndex": 96}, {"phone": "806-1771", "name": "Josefa Dantes", "role": "none", "scriptIndex": 16}, {"phone": "895-4489", "name": "Leizel Dantes", "role": "none", "scriptIndex": 46}, {"phone": "508-5680", "name": "Almira David", "role": "none", "scriptIndex": 15}, {"phone": "987-5096", "name": "Donabel David", "role": "none", "scriptIndex": 5}, {"phone": "999-2900", "name": "Jhonel David", "role": "none", "scriptIndex": 72}, {"phone": "748-7518", "name": "Maria David", "role": "none", "scriptIndex": 12}, {"phone": "379-5820", "name": "Nesty David", "role": "none", "scriptIndex": 17}, {"phone": "335-8525", "name": "Ferdinand De Guzman", "role": "none", "scriptIndex": 60}, {"phone": "165-5286", "name": "Leni De Guzman", "role": "none", "scriptIndex": 43}, {"phone": "445-4521", "name": "Bonifacio De Jesus", "role": "none", "scriptIndex": 11}, {"phone": "662-0725", "name": "Mila De Jesus", "role": "none", "scriptIndex": 62}, {"phone": "620-9949", "name": "Noel De Jesus", "role": "none", "scriptIndex": 24}, {"phone": "710-4906", "name": "Ronilo De Jesus", "role": "none", "scriptIndex": 96}, {"phone": "142-4405", "name": "Orland De La Paz", "role": "none", "scriptIndex": 30}, {"phone": "750-5770", "name": "Rowena De La Paz", "role": "none", "scriptIndex": 27}, {"phone": "674-9914", "name": "Fidel De Leon", "role": "none", "scriptIndex": 18}, {"phone": "179-1293", "name": "Grace De Leon", "role": "none", "scriptIndex": 74}, {"phone": "820-7538", "name": "Mabini De Leon", "role": "none", "scriptIndex": 11}, {"phone": "536-6229", "name": "Shiela De Leon", "role": "none", "scriptIndex": 61}, {"phone": "616-2504", "name": "Ivan De Ocampo", "role": "none", "scriptIndex": 61}, {"phone": "180-3875", "name": "Mila De Ocampo", "role": "none", "scriptIndex": 32}, {"phone": "427-2880", "name": "Arman De Vera", "role": "none", "scriptIndex": 99}, {"phone": "481-8502", "name": "Arnel De Vera", "role": "none", "scriptIndex": 41}, {"phone": "974-8095", "name": "Cherry Del Rosario", "role": "none", "scriptIndex": 81}, {"phone": "746-0029", "name": "Elmer Del Rosario", "role": "none", "scriptIndex": 22}, {"phone": "823-8486", "name": "Jeddah Del Rosario", "role": "none", "scriptIndex": 30}, {"phone": "550-6439", "name": "Dranreb Dela Cruz", "role": "none", "scriptIndex": 71}, {"phone": "519-1743", "name": "Vicky Dela Cruz", "role": "none", "scriptIndex": 67}, {"phone": "279-5062", "name": "Antonio Delos Santos", "role": "none", "scriptIndex": 40}, {"phone": "973-3509", "name": "Loida Delos Santos", "role": "none", "scriptIndex": 72}, {"phone": "499-3475", "name": "Mabini Diaz", "role": "none", "scriptIndex": 68}, {"phone": "988-0841", "name": "Marlon Dimaandal", "role": "none", "scriptIndex": 34}, {"phone": "938-8882", "name": "Tintin Dimaandal", "role": "none", "scriptIndex": 55}, {"phone": "070-9749", "name": "Christopher Dimaculangan", "role": "none", "scriptIndex": 17}, {"phone": "655-7080", "name": "Gwyneth Dimaculangan", "role": "none", "scriptIndex": 42}, {"phone": "959-1848", "name": "Juliet Dimapilis", "role": "none", "scriptIndex": 87}, {"phone": "019-7225", "name": "Dolly Dionisio", "role": "none", "scriptIndex": 44}, {"phone": "096-1588", "name": "Rechel Dionisio", "role": "none", "scriptIndex": 91}, {"phone": "430-6211", "name": "Elmer Dizon", "role": "none", "scriptIndex": 70}, {"phone": "221-7933", "name": "Gwyneth Dizon", "role": "none", "scriptIndex": 83}, {"phone": "980-4038", "name": "Susan Dizon", "role": "none", "scriptIndex": 65}, {"phone": "376-9345", "name": "Rustom Domingo", "role": "none", "scriptIndex": 51}, {"phone": "927-5724", "name": "Wilma Domingo", "role": "none", "scriptIndex": 8}, {"phone": "468-1867", "name": "Mabini Duque", "role": "none", "scriptIndex": 7}, {"phone": "616-8341", "name": "Estelita Duran", "role": "none", "scriptIndex": 3}, {"phone": "150-0400", "name": "Jerome Duran", "role": "none", "scriptIndex": 95}, {"phone": "811-2275", "name": "Edgardo Duterte", "role": "none", "scriptIndex": 28}, {"phone": "820-9906", "name": "Froilan Duterte", "role": "none", "scriptIndex": 94}, {"phone": "135-8837", "name": "Glenda Duterte", "role": "none", "scriptIndex": 40}, {"phone": "836-7541", "name": "Jenina Duterte", "role": "none", "scriptIndex": 55}, {"phone": "125-2223", "name": "Toto Duterte", "role": "none", "scriptIndex": 96}, {"phone": "139-9579", "name": "Cherry Eleazar", "role": "none", "scriptIndex": 41}, {"phone": "586-8792", "name": "Virgie Eleazar", "role": "none", "scriptIndex": 50}, {"phone": "348-9939", "name": "Rubylyn Elizalde", "role": "none", "scriptIndex": 89}, {"phone": "068-1653", "name": "Jhun-jhun Enriquez", "role": "none", "scriptIndex": 77}, {"phone": "830-9632", "name": "Jhonel Escudero", "role": "none", "scriptIndex": 64}, {"phone": "698-4088", "name": "Ming Escudero", "role": "none", "scriptIndex": 12}, {"phone": "922-9286", "name": "Jessa Espina", "role": "none", "scriptIndex": 73}, {"phone": "671-8179", "name": "Lovely Espina", "role": "none", "scriptIndex": 74}, {"phone": "951-8835", "name": "Ricardo Espina", "role": "none", "scriptIndex": 67}, {"phone": "506-4399", "name": "Rochelle Espina", "role": "none", "scriptIndex": 18}, {"phone": "626-4678", "name": "Ronnie Espino", "role": "none", "scriptIndex": 84}, {"phone": "855-5370", "name": "Arnel Esteban", "role": "none", "scriptIndex": 15}, {"phone": "517-7471", "name": "Allan Estrada", "role": "none", "scriptIndex": 67}, {"phone": "299-0535", "name": "Apolinario Estrella", "role": "none", "scriptIndex": 50}, {"phone": "404-9819", "name": "Baby Estrella", "role": "none", "scriptIndex": 43}, {"phone": "651-3115", "name": "Michelle Estrella", "role": "none", "scriptIndex": 22}, {"phone": "459-9654", "name": "Rhea Estrella", "role": "none", "scriptIndex": 81}, {"phone": "341-2754", "name": "Mark Evangelista", "role": "none", "scriptIndex": 94}, {"phone": "823-8450", "name": "Gloria Fabros", "role": "none", "scriptIndex": 43}, {"phone": "142-1679", "name": "Jinky Fabros", "role": "none", "scriptIndex": 52}, {"phone": "681-9649", "name": "Milagros Fabros", "role": "none", "scriptIndex": 68}, {"phone": "028-5221", "name": "Odette Fabros", "role": "none", "scriptIndex": 69}, {"phone": "550-4729", "name": "Juan Fajardo", "role": "none", "scriptIndex": 56}, {"phone": "764-1480", "name": "Kim Faustino", "role": "none", "scriptIndex": 20}, {"phone": "369-2939", "name": "Kyla Faustino", "role": "none", "scriptIndex": 17}, {"phone": "392-1463", "name": "Charmaine Feliciano", "role": "none", "scriptIndex": 8}, {"phone": "984-9424", "name": "Cristina Feliciano", "role": "none", "scriptIndex": 57}, {"phone": "388-9335", "name": "Manuel Feliciano", "role": "none", "scriptIndex": 74}, {"phone": "918-8515", "name": "Arvin Fernandez", "role": "none", "scriptIndex": 15}, {"phone": "816-6636", "name": "Roxanne Fernandez", "role": "none", "scriptIndex": 3}, {"phone": "554-5675", "name": "Angelica Ferrer", "role": "none", "scriptIndex": 73}, {"phone": "876-6730", "name": "Pao Ferrer", "role": "none", "scriptIndex": 80}, {"phone": "688-5085", "name": "Cynthia Figueroa", "role": "none", "scriptIndex": 77}, {"phone": "395-1337", "name": "Odette Figueroa", "role": "none", "scriptIndex": 60}, {"phone": "355-5234", "name": "Chesca Flores", "role": "none", "scriptIndex": 8}, {"phone": "390-9370", "name": "Divine Flores", "role": "none", "scriptIndex": 96}, {"phone": "059-3946", "name": "Liwayway Fortun", "role": "none", "scriptIndex": 31}, {"phone": "196-8625", "name": "Ferdinand Franco", "role": "none", "scriptIndex": 77}, {"phone": "258-2525", "name": "Leni Franco", "role": "none", "scriptIndex": 79}, {"phone": "051-8700", "name": "Jhun Fuentes", "role": "none", "scriptIndex": 48}, {"phone": "261-3331", "name": "Pearl Fuentes", "role": "none", "scriptIndex": 7}, {"phone": "803-7749", "name": "Salve Fuentes", "role": "none", "scriptIndex": 93}, {"phone": "047-7729", "name": "Alvin Gabriel", "role": "none", "scriptIndex": 43}, {"phone": "486-1193", "name": "Baby Gabriel", "role": "none", "scriptIndex": 46}, {"phone": "088-7118", "name": "Bituin Gabriel", "role": "none", "scriptIndex": 56}, {"phone": "378-4669", "name": "Cesar Gabriel", "role": "none", "scriptIndex": 9}, {"phone": "543-6751", "name": "Eufrocina Gabriel", "role": "clue", "scriptIndex": 38, "script": "Oops, wrong person 'to! But since nandito ka na, here's a freebie: <clue>5 letters or more yung last name niya</clue>, di siya ka-level ng 'Uy' o 'Sy', mas mahaba pa!"}, {"phone": "724-7172", "name": "Arnel Galang", "role": "none", "scriptIndex": 72}, {"phone": "672-3951", "name": "Dennis Galang", "role": "none", "scriptIndex": 46}, {"phone": "144-1586", "name": "Rosanna Galang", "role": "none", "scriptIndex": 9}, {"phone": "196-3116", "name": "Diwata Galvez", "role": "none", "scriptIndex": 51}, {"phone": "985-2616", "name": "Rhea Galvez", "role": "none", "scriptIndex": 71}, {"phone": "053-7873", "name": "Erap Garcia", "role": "none", "scriptIndex": 95}, {"phone": "966-4040", "name": "Nanette Garcia", "role": "none", "scriptIndex": 73}, {"phone": "765-0266", "name": "Odette Gatchalian", "role": "none", "scriptIndex": 60}, {"phone": "037-3131", "name": "Salve Gatchalian", "role": "none", "scriptIndex": 61}, {"phone": "935-7894", "name": "Gerald Gener", "role": "none", "scriptIndex": 14}, {"phone": "348-4581", "name": "Mila Gerona", "role": "none", "scriptIndex": 37}, {"phone": "392-3858", "name": "Aljon Geronimo", "role": "none", "scriptIndex": 51}, {"phone": "669-5890", "name": "Almira Geronimo", "role": "none", "scriptIndex": 61}, {"phone": "839-2848", "name": "Lea Geronimo", "role": "none", "scriptIndex": 94}, {"phone": "209-5147", "name": "Lovely Geronimo", "role": "none", "scriptIndex": 48}, {"phone": "793-4264", "name": "Dranreb Go", "role": "none", "scriptIndex": 78}, {"phone": "540-9938", "name": "Gerald Golez", "role": "none", "scriptIndex": 32}, {"phone": "405-2144", "name": "Jhun Golez", "role": "none", "scriptIndex": 73}, {"phone": "135-5718", "name": "Vivian Golez", "role": "none", "scriptIndex": 58}, {"phone": "976-5400", "name": "Ronnie Gomez", "role": "none", "scriptIndex": 16}, {"phone": "820-1353", "name": "Zeny Gomez", "role": "none", "scriptIndex": 67}, {"phone": "386-9911", "name": "Benigno Gonzales", "role": "none", "scriptIndex": 25}, {"phone": "504-2390", "name": "Leizel Gonzales", "role": "none", "scriptIndex": 95}, {"phone": "067-3456", "name": "Ranilo Gonzales", "role": "none", "scriptIndex": 79}, {"phone": "845-1276", "name": "Luzviminda Gregorio", "role": "none", "scriptIndex": 54}, {"phone": "184-0427", "name": "Pearl Gregorio", "role": "none", "scriptIndex": 61}, {"phone": "313-4118", "name": "Rovic Gregorio", "role": "none", "scriptIndex": 70}, {"phone": "047-1218", "name": "Sergio Gregorio", "role": "none", "scriptIndex": 40}, {"phone": "288-9909", "name": "Flordeliza Guanzon", "role": "none", "scriptIndex": 40}, {"phone": "460-8410", "name": "Froilan Guanzon", "role": "none", "scriptIndex": 92}, {"phone": "343-5238", "name": "Jhoana Guanzon", "role": "none", "scriptIndex": 73}, {"phone": "127-6029", "name": "Maria Guanzon", "role": "none", "scriptIndex": 93}, {"phone": "197-1845", "name": "Rustan Guanzon", "role": "none", "scriptIndex": 27}, {"phone": "046-0893", "name": "Efren Guevarra", "role": "none", "scriptIndex": 53}, {"phone": "605-0920", "name": "Leni Guevarra", "role": "none", "scriptIndex": 1}, {"phone": "654-0939", "name": "Rodrigo Guevarra", "role": "none", "scriptIndex": 76}, {"phone": "879-2370", "name": "Aldous Guiao", "role": "none", "scriptIndex": 35}, {"phone": "660-1380", "name": "Joanna Guiao", "role": "none", "scriptIndex": 24}, {"phone": "902-7385", "name": "Consolacion Guico", "role": "none", "scriptIndex": 24}, {"phone": "085-5077", "name": "Fidel Guico", "role": "none", "scriptIndex": 69}, {"phone": "185-9590", "name": "Ronald Guico", "role": "none", "scriptIndex": 37}, {"phone": "456-2435", "name": "Juan Gutierrez", "role": "none", "scriptIndex": 27}, {"phone": "033-6070", "name": "Rechel Gutierrez", "role": "none", "scriptIndex": 43}, {"phone": "506-9789", "name": "Bembol Habana", "role": "none", "scriptIndex": 84}, {"phone": "389-7639", "name": "Ma-anne Habana", "role": "none", "scriptIndex": 28}, {"phone": "527-5491", "name": "Claudine Hernandez", "role": "none", "scriptIndex": 37}, {"phone": "694-9717", "name": "Dolly Hernandez", "role": "none", "scriptIndex": 22}, {"phone": "345-8967", "name": "Mabel Hernandez", "role": "none", "scriptIndex": 70}, {"phone": "258-9874", "name": "Pau Hernandez", "role": "none", "scriptIndex": 90}, {"phone": "418-2948", "name": "Araw Herrera", "role": "none", "scriptIndex": 1}, {"phone": "215-7043", "name": "Leni Herrera", "role": "none", "scriptIndex": 33}, {"phone": "661-0969", "name": "Ma-anne Herrera", "role": "none", "scriptIndex": 7}, {"phone": "078-1479", "name": "Noel Herrera", "role": "none", "scriptIndex": 75}, {"phone": "549-0133", "name": "Rustom Herrera", "role": "none", "scriptIndex": 11}, {"phone": "794-3770", "name": "Vergel Herrera", "role": "none", "scriptIndex": 8}, {"phone": "643-8209", "name": "Vivian Herrera", "role": "none", "scriptIndex": 48}, {"phone": "614-5119", "name": "Benigno Hidalgo", "role": "none", "scriptIndex": 12}, {"phone": "448-7941", "name": "Elton Hidalgo", "role": "none", "scriptIndex": 82}, {"phone": "124-9395", "name": "Juan Hidalgo", "role": "none", "scriptIndex": 38}, {"phone": "721-3396", "name": "Laarni Hidalgo", "role": "none", "scriptIndex": 24}, {"phone": "968-6293", "name": "Bembol Hizon", "role": "none", "scriptIndex": 74}, {"phone": "043-4712", "name": "Eufrocina Hizon", "role": "none", "scriptIndex": 73}, {"phone": "897-0613", "name": "Harold Hizon", "role": "none", "scriptIndex": 93}, {"phone": "081-3814", "name": "Jerrick Hizon", "role": "none", "scriptIndex": 20}, {"phone": "267-5161", "name": "Jhonel Ignacio", "role": "none", "scriptIndex": 24}, {"phone": "851-1133", "name": "Roi Ignacio", "role": "none", "scriptIndex": 87}, {"phone": "206-0717", "name": "Ariel Ilagan", "role": "none", "scriptIndex": 61}, {"phone": "425-1406", "name": "Diosdado Imperial", "role": "none", "scriptIndex": 83}, {"phone": "581-3164", "name": "Marites Imperial", "role": "none", "scriptIndex": 80}, {"phone": "156-3214", "name": "Reynaldo Imperial", "role": "none", "scriptIndex": 72}, {"phone": "581-9875", "name": "Allan Isip", "role": "none", "scriptIndex": 70}, {"phone": "474-8920", "name": "Angel Isip", "role": "none", "scriptIndex": 85}, {"phone": "166-9239", "name": "Chesca Jacinto", "role": "none", "scriptIndex": 70}, {"phone": "328-9883", "name": "Emilio Jacinto", "role": "none", "scriptIndex": 81}, {"phone": "878-2365", "name": "Jerome Jacinto", "role": "none", "scriptIndex": 4}, {"phone": "871-2580", "name": "Kimberly Jacinto", "role": "none", "scriptIndex": 35}, {"phone": "281-0998", "name": "Reyland Jacinto", "role": "none", "scriptIndex": 19}, {"phone": "495-1260", "name": "Rica Jacinto", "role": "none", "scriptIndex": 99}, {"phone": "124-0782", "name": "Jhonel Jamir", "role": "none", "scriptIndex": 3}, {"phone": "840-3728", "name": "Michael Jocson", "role": "none", "scriptIndex": 25}, {"phone": "267-5892", "name": "Ming Joson", "role": "none", "scriptIndex": 1}, {"phone": "474-4341", "name": "Rosario Joson", "role": "none", "scriptIndex": 59}, {"phone": "163-6642", "name": "Ruel Joson", "role": "none", "scriptIndex": 58}, {"phone": "682-2877", "name": "Bing Jover", "role": "none", "scriptIndex": 56}, {"phone": "407-7842", "name": "Bunso Jover", "role": "none", "scriptIndex": 86}, {"phone": "335-1415", "name": "Kaye Juanico", "role": "none", "scriptIndex": 38}, {"phone": "738-5314", "name": "Noli Juanico", "role": "none", "scriptIndex": 32}, {"phone": "058-0821", "name": "Bogs Jularbal", "role": "none", "scriptIndex": 51}, {"phone": "882-5231", "name": "Estelita Jularbal", "role": "none", "scriptIndex": 96}, {"phone": "423-0749", "name": "Noli Jularbal", "role": "none", "scriptIndex": 60}, {"phone": "979-2837", "name": "Ompong Jularbal", "role": "none", "scriptIndex": 71}, {"phone": "016-3394", "name": "Gloria Kalaw", "role": "none", "scriptIndex": 42}, {"phone": "762-7749", "name": "Arvin Kapunan", "role": "none", "scriptIndex": 77}, {"phone": "135-6337", "name": "Nanette Kapunan", "role": "none", "scriptIndex": 17}, {"phone": "641-7994", "name": "Orland Kapunan", "role": "none", "scriptIndex": 0}, {"phone": "369-1745", "name": "Pedro Kapunan", "role": "none", "scriptIndex": 30}, {"phone": "491-5714", "name": "Tintin Kapunan", "role": "none", "scriptIndex": 66}, {"phone": "298-8044", "name": "Raffy Katindig", "role": "none", "scriptIndex": 83}, {"phone": "936-3328", "name": "Rustom Katindig", "role": "none", "scriptIndex": 19}, {"phone": "619-7792", "name": "Heherson Lacson", "role": "none", "scriptIndex": 69}, {"phone": "254-6819", "name": "Jerico Lacson", "role": "none", "scriptIndex": 87}, {"phone": "686-1713", "name": "Mariano Lacson", "role": "none", "scriptIndex": 22}, {"phone": "118-6622", "name": "Johnrey Lacuesta", "role": "none", "scriptIndex": 45}, {"phone": "872-4022", "name": "Jovit Lacuesta", "role": "none", "scriptIndex": 35}, {"phone": "385-4592", "name": "Jinggoy Lagman", "role": "none", "scriptIndex": 4}, {"phone": "122-0126", "name": "Kimberly Lansang", "role": "none", "scriptIndex": 17}, {"phone": "765-6807", "name": "Kyla Lansang", "role": "none", "scriptIndex": 4}, {"phone": "030-4478", "name": "Raffy Lansang", "role": "clue", "scriptIndex": 60, "script": "Huh? Wrong number ka, bes. Konting clue na lang: <clue>mas mahaba ang first name niya kaysa sa last name</clue>, parang 'Christopher Uy'."}, {"phone": "345-6211", "name": "Rovic Lansang", "role": "none", "scriptIndex": 18}, {"phone": "096-9141", "name": "Bunso Lantion", "role": "none", "scriptIndex": 11}, {"phone": "872-8742", "name": "Christopher Lantion", "role": "none", "scriptIndex": 42}, {"phone": "421-8117", "name": "Froilan Lantion", "role": "none", "scriptIndex": 65}, {"phone": "285-1137", "name": "Ramon Lantion", "role": "none", "scriptIndex": 58}, {"phone": "125-0699", "name": "Cynthia Lao", "role": "none", "scriptIndex": 65}, {"phone": "573-6985", "name": "Francis Lao", "role": "none", "scriptIndex": 0}, {"phone": "988-7052", "name": "Ramon Lao", "role": "none", "scriptIndex": 65}, {"phone": "083-9547", "name": "Ferdinand Lazaro", "role": "none", "scriptIndex": 97}, {"phone": "001-6164", "name": "Allan Ledesma", "role": "none", "scriptIndex": 39}, {"phone": "291-7444", "name": "Divine Ledesma", "role": "none", "scriptIndex": 76}, {"phone": "309-5285", "name": "Dennis Legarda", "role": "none", "scriptIndex": 90}, {"phone": "312-1916", "name": "Dranreb Legarda", "role": "none", "scriptIndex": 21}, {"phone": "104-1519", "name": "Jayvee Legarda", "role": "none", "scriptIndex": 73}, {"phone": "029-8098", "name": "Orland Legarda", "role": "none", "scriptIndex": 67}, {"phone": "021-9638", "name": "Bonifacio Leynes", "role": "none", "scriptIndex": 84}, {"phone": "823-1886", "name": "Kyla Leynes", "role": "none", "scriptIndex": 92}, {"phone": "997-3060", "name": "Pau Leynes", "role": "none", "scriptIndex": 35}, {"phone": "847-7430", "name": "Reyland Leynes", "role": "none", "scriptIndex": 53}, {"phone": "619-9758", "name": "Cherry Lim", "role": "none", "scriptIndex": 54}, {"phone": "734-2907", "name": "Elpidio Lim", "role": "none", "scriptIndex": 5}, {"phone": "284-2547", "name": "Ricardo Lim", "role": "none", "scriptIndex": 33}, {"phone": "466-3389", "name": "Lorna Liongson", "role": "none", "scriptIndex": 26}, {"phone": "025-7909", "name": "Fernan Litonjua", "role": "none", "scriptIndex": 2}, {"phone": "717-1044", "name": "Ricardo Litonjua", "role": "none", "scriptIndex": 58}, {"phone": "340-9042", "name": "Susan Litonjua", "role": "none", "scriptIndex": 75}, {"phone": "946-7247", "name": "Christian Llamas", "role": "none", "scriptIndex": 20}, {"phone": "970-8501", "name": "Jerome Llamas", "role": "none", "scriptIndex": 96}, {"phone": "360-7501", "name": "Donabel Lontoc", "role": "none", "scriptIndex": 70}, {"phone": "952-0436", "name": "Rosanna Lontoc", "role": "none", "scriptIndex": 30}, {"phone": "487-1599", "name": "Susan Lontoc", "role": "none", "scriptIndex": 86}, {"phone": "229-1124", "name": "Benigno Lopez", "role": "none", "scriptIndex": 9}, {"phone": "317-6421", "name": "Esperanza Lopez", "role": "none", "scriptIndex": 87}, {"phone": "656-8346", "name": "Junjun Lopez", "role": "none", "scriptIndex": 63}, {"phone": "006-2972", "name": "Mark Lopez", "role": "none", "scriptIndex": 21}, {"phone": "739-3490", "name": "Romeo Lopez", "role": "none", "scriptIndex": 58}, {"phone": "305-6389", "name": "Aljon Lorenzo", "role": "none", "scriptIndex": 66}, {"phone": "567-1524", "name": "Corazon Luna", "role": "none", "scriptIndex": 11}, {"phone": "798-9173", "name": "Dexter Luna", "role": "none", "scriptIndex": 31}, {"phone": "219-3066", "name": "Glaiza Luna", "role": "none", "scriptIndex": 20}, {"phone": "273-6502", "name": "Johnrey Luna", "role": "none", "scriptIndex": 65}, {"phone": "433-6735", "name": "Rodel Luna", "role": "none", "scriptIndex": 24}, {"phone": "882-0783", "name": "Kier Macapagal", "role": "none", "scriptIndex": 36}, {"phone": "383-7056", "name": "Krystal Macaraeg", "role": "none", "scriptIndex": 11}, {"phone": "718-8796", "name": "Ariel Macatangay", "role": "none", "scriptIndex": 49}, {"phone": "779-4419", "name": "Ronilo Macatangay", "role": "none", "scriptIndex": 29}, {"phone": "520-3673", "name": "Glenda Madrigal", "role": "none", "scriptIndex": 98}, {"phone": "566-4728", "name": "Imelda Madrigal", "role": "none", "scriptIndex": 8}, {"phone": "224-2266", "name": "Ramon Madrigal", "role": "none", "scriptIndex": 69}, {"phone": "018-5940", "name": "Wilhelmina Madrigal", "role": "none", "scriptIndex": 79}, {"phone": "637-8167", "name": "Zeny Madrigal", "role": "none", "scriptIndex": 55}, {"phone": "381-4634", "name": "Francis Magbanua", "role": "none", "scriptIndex": 13}, {"phone": "441-1146", "name": "Irish Magbanua", "role": "none", "scriptIndex": 88}, {"phone": "920-0653", "name": "Liwayway Magbanua", "role": "none", "scriptIndex": 72}, {"phone": "116-9238", "name": "Princess Magbanua", "role": "none", "scriptIndex": 33}, {"phone": "692-3891", "name": "Renz Magbanua", "role": "none", "scriptIndex": 65}, {"phone": "559-2830", "name": "Rica Magno", "role": "none", "scriptIndex": 34}, {"phone": "161-4179", "name": "Gerlie Magsaysay", "role": "none", "scriptIndex": 11}, {"phone": "596-9052", "name": "Ariel Malabanan", "role": "none", "scriptIndex": 37}, {"phone": "686-8850", "name": "Rovic Malabanan", "role": "none", "scriptIndex": 67}, {"phone": "680-2711", "name": "Clarissa Malapit", "role": "none", "scriptIndex": 70}, {"phone": "982-6652", "name": "Christian Malig", "role": "clue", "scriptIndex": 65, "script": "Ay, wrong number! Pero I heard something kanina... <clue>hindi naman 3 letters yung first name niya</clue>, hindi siya kasing-short ng 'Ana' o 'Ivy', promise."}, {"phone": "710-2316", "name": "Gregorio Malig", "role": "none", "scriptIndex": 54}, {"phone": "462-1237", "name": "Reymark Malonzo", "role": "none", "scriptIndex": 25}, {"phone": "080-9044", "name": "Edmund Mamaril", "role": "none", "scriptIndex": 13}, {"phone": "314-4825", "name": "Glenda Mamaril", "role": "none", "scriptIndex": 35}, {"phone": "075-7357", "name": "Ricardo Mamaril", "role": "none", "scriptIndex": 35}, {"phone": "284-7428", "name": "Dennis Manalo", "role": "none", "scriptIndex": 25}, {"phone": "002-6396", "name": "Gerald Manalo", "role": "none", "scriptIndex": 40}, {"phone": "335-3467", "name": "Jonna Manalo", "role": "none", "scriptIndex": 83}, {"phone": "800-5883", "name": "Ana Manansala", "role": "none", "scriptIndex": 49}, {"phone": "699-6990", "name": "Apolinario Manansala", "role": "none", "scriptIndex": 89}, {"phone": "611-8692", "name": "Mabini Manansala", "role": "none", "scriptIndex": 47}, {"phone": "459-6184", "name": "Odette Manansala", "role": "none", "scriptIndex": 40}, {"phone": "195-9820", "name": "Eufrocina Manlangit", "role": "none", "scriptIndex": 11}, {"phone": "873-7916", "name": "Ivan Manlangit", "role": "none", "scriptIndex": 86}, {"phone": "773-2292", "name": "Maria Manlangit", "role": "none", "scriptIndex": 37}, {"phone": "942-2458", "name": "Nesty Manlangit", "role": "none", "scriptIndex": 55}, {"phone": "473-9508", "name": "Vivian Manlangit", "role": "none", "scriptIndex": 17}, {"phone": "516-7378", "name": "Cherrie Manuel", "role": "none", "scriptIndex": 75}, {"phone": "012-4781", "name": "Mabini Manuel", "role": "none", "scriptIndex": 42}, {"phone": "679-2492", "name": "Pablo Manuel", "role": "none", "scriptIndex": 81}, {"phone": "797-1387", "name": "Reyland Marasigan", "role": "none", "scriptIndex": 76}, {"phone": "428-9771", "name": "Wilma Marasigan", "role": "none", "scriptIndex": 40}, {"phone": "926-9569", "name": "Rica Marcelo", "role": "none", "scriptIndex": 19}, {"phone": "302-0894", "name": "Heherson Marcos", "role": "none", "scriptIndex": 81}, {"phone": "606-9246", "name": "Angelo Mariano", "role": "none", "scriptIndex": 53}, {"phone": "631-4902", "name": "Genalyn Mariano", "role": "none", "scriptIndex": 11}, {"phone": "340-6224", "name": "Aljon Marquez", "role": "none", "scriptIndex": 33}, {"phone": "260-0049", "name": "Angel Marquez", "role": "none", "scriptIndex": 18}, {"phone": "640-5005", "name": "Benigno Marquez", "role": "none", "scriptIndex": 8}, {"phone": "891-5083", "name": "Christian Marquez", "role": "none", "scriptIndex": 13}, {"phone": "525-0802", "name": "Milagros Marquez", "role": "none", "scriptIndex": 65}, {"phone": "838-5654", "name": "Orland Marquez", "role": "none", "scriptIndex": 6}, {"phone": "806-8116", "name": "Ariel Masangkay", "role": "none", "scriptIndex": 99}, {"phone": "882-0693", "name": "Charmaine Masangkay", "role": "none", "scriptIndex": 39}, {"phone": "937-3921", "name": "Jake Masangkay", "role": "none", "scriptIndex": 26}, {"phone": "964-3249", "name": "Ompong Masangkay", "role": "none", "scriptIndex": 14}, {"phone": "834-8897", "name": "Ysabel Masangkay", "role": "none", "scriptIndex": 37}, {"phone": "133-6070", "name": "May Matias", "role": "none", "scriptIndex": 93}, {"phone": "761-7204", "name": "Roel Matias", "role": "none", "scriptIndex": 10}, {"phone": "249-2417", "name": "Vener Matias", "role": "none", "scriptIndex": 82}, {"phone": "070-7620", "name": "Baby Maypa", "role": "none", "scriptIndex": 25}, {"phone": "924-0960", "name": "Jayson Maypa", "role": "none", "scriptIndex": 67}, {"phone": "745-5559", "name": "Bogs Mejia", "role": "none", "scriptIndex": 73}, {"phone": "527-4558", "name": "Cynthia Mejia", "role": "none", "scriptIndex": 17}, {"phone": "713-4844", "name": "Malaya Mejia", "role": "none", "scriptIndex": 52}, {"phone": "374-0741", "name": "Nico Mejia", "role": "none", "scriptIndex": 43}, {"phone": "875-7408", "name": "Apolinario Mendez", "role": "none", "scriptIndex": 73}, {"phone": "708-3986", "name": "Jenina Mendez", "role": "none", "scriptIndex": 89}, {"phone": "497-7886", "name": "Gerlie Mendoza", "role": "none", "scriptIndex": 41}, {"phone": "105-0430", "name": "Yolanda Mendoza", "role": "none", "scriptIndex": 27}, {"phone": "793-5543", "name": "Pearl Mercado", "role": "none", "scriptIndex": 40}, {"phone": "843-9419", "name": "Renz Mercado", "role": "none", "scriptIndex": 22}, {"phone": "940-0971", "name": "Emilio Miranda", "role": "none", "scriptIndex": 47}, {"phone": "630-7248", "name": "Fernan Miranda", "role": "none", "scriptIndex": 89}, {"phone": "513-7726", "name": "Jake Miranda", "role": "none", "scriptIndex": 91}, {"phone": "338-7739", "name": "Dennis Mislang", "role": "none", "scriptIndex": 65}, {"phone": "055-3073", "name": "Roxanne Mislang", "role": "none", "scriptIndex": 19}, {"phone": "417-5421", "name": "Bonifacio Mojica", "role": "none", "scriptIndex": 67}, {"phone": "348-8318", "name": "Juliet Mojica", "role": "none", "scriptIndex": 16}, {"phone": "718-8998", "name": "Odette Mojica", "role": "none", "scriptIndex": 34}, {"phone": "747-1557", "name": "Ramon Mojica", "role": "none", "scriptIndex": 13}, {"phone": "279-3531", "name": "Ronald Mojica", "role": "none", "scriptIndex": 14}, {"phone": "907-9431", "name": "Rovilson Mojica", "role": "none", "scriptIndex": 42}, {"phone": "063-3388", "name": "Ruel Mojica", "role": "none", "scriptIndex": 19}, {"phone": "467-9239", "name": "Yolanda Mojica", "role": "none", "scriptIndex": 87}, {"phone": "597-5040", "name": "Dolly Molina", "role": "none", "scriptIndex": 39}, {"phone": "673-9562", "name": "Christopher Montano", "role": "none", "scriptIndex": 47}, {"phone": "503-0981", "name": "Jhonel Montano", "role": "none", "scriptIndex": 48}, {"phone": "654-7489", "name": "Jhun Montano", "role": "none", "scriptIndex": 95}, {"phone": "155-6765", "name": "Love Montano", "role": "none", "scriptIndex": 95}, {"phone": "842-8031", "name": "Alvin Montemayor", "role": "none", "scriptIndex": 85}, {"phone": "258-1341", "name": "Junjun Montemayor", "role": "none", "scriptIndex": 88}, {"phone": "718-6590", "name": "Reymark Morales", "role": "none", "scriptIndex": 80}, {"phone": "117-8922", "name": "Ivan Munoz", "role": "none", "scriptIndex": 84}, {"phone": "104-4055", "name": "Jea Munoz", "role": "none", "scriptIndex": 94}, {"phone": "320-4176", "name": "Love Navarro", "role": "none", "scriptIndex": 20}, {"phone": "865-9190", "name": "Jerome Nazareno", "role": "none", "scriptIndex": 76}, {"phone": "671-1494", "name": "Jhanine Nazareno", "role": "none", "scriptIndex": 83}, {"phone": "322-2290", "name": "Michael Nazareno", "role": "none", "scriptIndex": 80}, {"phone": "137-4333", "name": "Diwata Nepomuceno", "role": "none", "scriptIndex": 69}, {"phone": "130-0685", "name": "Ferdie Nepomuceno", "role": "none", "scriptIndex": 10}, {"phone": "462-3743", "name": "Jayvee Nepomuceno", "role": "none", "scriptIndex": 76}, {"phone": "179-2116", "name": "Vergel Nepomuceno", "role": "none", "scriptIndex": 83}, {"phone": "098-6105", "name": "Cynthia Nicolas", "role": "none", "scriptIndex": 94}, {"phone": "983-5934", "name": "Divine Nicolas", "role": "none", "scriptIndex": 42}, {"phone": "190-9598", "name": "Ompong Nicolas", "role": "none", "scriptIndex": 52}, {"phone": "678-2141", "name": "Bogs Nograles", "role": "none", "scriptIndex": 59}, {"phone": "161-7433", "name": "Krystal Nograles", "role": "none", "scriptIndex": 5}, {"phone": "660-5427", "name": "Vhong Nograles", "role": "none", "scriptIndex": 54}, {"phone": "093-3637", "name": "Ferdie Nolasco", "role": "none", "scriptIndex": 70}, {"phone": "603-6560", "name": "Jinggoy Nolasco", "role": "none", "scriptIndex": 92}, {"phone": "853-8900", "name": "Florendo Noynay", "role": "none", "scriptIndex": 36}, {"phone": "127-7679", "name": "Kim Noynay", "role": "none", "scriptIndex": 48}, {"phone": "921-8479", "name": "Odette Noynay", "role": "none", "scriptIndex": 33}, {"phone": "425-7933", "name": "Florendo Ocampo", "role": "none", "scriptIndex": 35}, {"phone": "079-4681", "name": "Juan Ocampo", "role": "none", "scriptIndex": 75}, {"phone": "034-9495", "name": "Loida Ocampo", "role": "none", "scriptIndex": 4}, {"phone": "342-7055", "name": "Manuel Ocampo", "role": "none", "scriptIndex": 96}, {"phone": "967-5661", "name": "Cherrie Olivar", "role": "none", "scriptIndex": 46}, {"phone": "627-8270", "name": "Lualhati Olivar", "role": "none", "scriptIndex": 87}, {"phone": "455-3868", "name": "Jea Oliveros", "role": "none", "scriptIndex": 43}, {"phone": "781-1259", "name": "Nova Oliveros", "role": "none", "scriptIndex": 75}, {"phone": "612-0797", "name": "Archie Ong", "role": "none", "scriptIndex": 16}, {"phone": "383-6408", "name": "Jenina Ong", "role": "none", "scriptIndex": 15}, {"phone": "617-6981", "name": "Lito Ong", "role": "none", "scriptIndex": 78}, {"phone": "570-9088", "name": "Rodel Orbeta", "role": "none", "scriptIndex": 65}, {"phone": "630-0086", "name": "Rustom Orbeta", "role": "none", "scriptIndex": 23}, {"phone": "930-9366", "name": "Artemio Orosa", "role": "none", "scriptIndex": 46}, {"phone": "477-8476", "name": "Cherrie Orosa", "role": "none", "scriptIndex": 56}, {"phone": "930-7253", "name": "Orland Orosa", "role": "none", "scriptIndex": 44}, {"phone": "265-4050", "name": "Sergio Orosa", "role": "none", "scriptIndex": 51}, {"phone": "176-7292", "name": "Cherrie Ortega", "role": "none", "scriptIndex": 78}, {"phone": "278-3827", "name": "Lualhati Ortega", "role": "none", "scriptIndex": 58}, {"phone": "038-0932", "name": "Roxanne Ortega", "role": "none", "scriptIndex": 83}, {"phone": "090-5153", "name": "Ariel Osmena", "role": "none", "scriptIndex": 62}, {"phone": "626-9975", "name": "Donita Osmena", "role": "none", "scriptIndex": 50}, {"phone": "377-4295", "name": "Edmund Osmena", "role": "none", "scriptIndex": 67}, {"phone": "292-6930", "name": "Jose Osmena", "role": "none", "scriptIndex": 23}, {"phone": "517-9919", "name": "Krystal Osmena", "role": "none", "scriptIndex": 42}, {"phone": "074-0981", "name": "Laarni Osmena", "role": "none", "scriptIndex": 9}, {"phone": "973-7996", "name": "Noel Osmena", "role": "none", "scriptIndex": 90}, {"phone": "349-2578", "name": "Rhea Osmena", "role": "none", "scriptIndex": 76}, {"phone": "136-7612", "name": "Edgardo Pacheco", "role": "none", "scriptIndex": 58}, {"phone": "865-4949", "name": "Joel Pacheco", "role": "none", "scriptIndex": 78}, {"phone": "955-5272", "name": "Onyok Pacheco", "role": "none", "scriptIndex": 41}, {"phone": "000-7009", "name": "Romeo Pacheco", "role": "none", "scriptIndex": 10}, {"phone": "636-9224", "name": "Allan Padilla", "role": "none", "scriptIndex": 98}, {"phone": "579-8115", "name": "Gina Padilla", "role": "none", "scriptIndex": 42}, {"phone": "323-1188", "name": "Lea Padilla", "role": "none", "scriptIndex": 56}, {"phone": "658-0510", "name": "Leizel Padilla", "role": "none", "scriptIndex": 35}, {"phone": "989-3944", "name": "Virgie Padilla", "role": "none", "scriptIndex": 81}, {"phone": "354-2541", "name": "Joanna Pagcaliwagan", "role": "none", "scriptIndex": 67}, {"phone": "186-0823", "name": "Emilio Palad", "role": "none", "scriptIndex": 71}, {"phone": "388-4422", "name": "Genalyn Palad", "role": "target", "scriptIndex": 84}, {"phone": "255-1235", "name": "Junjun Palad", "role": "none", "scriptIndex": 70}, {"phone": "787-4616", "name": "Romeo Palad", "role": "none", "scriptIndex": 3}, {"phone": "583-9999", "name": "Jinggoy Palanca", "role": "none", "scriptIndex": 67}, {"phone": "716-4198", "name": "Jea Palma", "role": "none", "scriptIndex": 27}, {"phone": "125-4382", "name": "Jhun-jhun Palma", "role": "none", "scriptIndex": 43}, {"phone": "452-7244", "name": "Ma-anne Palma", "role": "none", "scriptIndex": 93}, {"phone": "321-6660", "name": "Rosanna Palma", "role": "none", "scriptIndex": 22}, {"phone": "446-9707", "name": "Susan Palma", "role": "none", "scriptIndex": 70}, {"phone": "941-2091", "name": "Gerald Pamintuan", "role": "none", "scriptIndex": 28}, {"phone": "822-9038", "name": "Noel Pamintuan", "role": "none", "scriptIndex": 96}, {"phone": "356-6690", "name": "Cristina Panaligan", "role": "none", "scriptIndex": 28}, {"phone": "490-7216", "name": "Kenneth Panaligan", "role": "none", "scriptIndex": 95}, {"phone": "249-7483", "name": "Susan Pangan", "role": "none", "scriptIndex": 7}, {"phone": "156-7454", "name": "Elvis Pascual", "role": "none", "scriptIndex": 33}, {"phone": "331-4064", "name": "Erwin Pascual", "role": "none", "scriptIndex": 64}, {"phone": "116-1070", "name": "Johnrey Pascual", "role": "none", "scriptIndex": 76}, {"phone": "867-6580", "name": "Bogs Pastor", "role": "none", "scriptIndex": 91}, {"phone": "936-3974", "name": "Dranreb Pastor", "role": "none", "scriptIndex": 5}, {"phone": "321-2910", "name": "Ivy Pastor", "role": "none", "scriptIndex": 76}, {"phone": "213-5455", "name": "Jea Pastor", "role": "none", "scriptIndex": 61}, {"phone": "219-3310", "name": "Jonalyn Pastor", "role": "none", "scriptIndex": 42}, {"phone": "250-6653", "name": "Leizel Pelaez", "role": "none", "scriptIndex": 91}, {"phone": "139-3196", "name": "Allan Pena", "role": "none", "scriptIndex": 66}, {"phone": "196-3711", "name": "Marlon Pena", "role": "none", "scriptIndex": 14}, {"phone": "029-6371", "name": "Roel Pena", "role": "none", "scriptIndex": 94}, {"phone": "650-8804", "name": "Harold Peralta", "role": "none", "scriptIndex": 41}, {"phone": "224-4471", "name": "Jeddah Peralta", "role": "none", "scriptIndex": 28}, {"phone": "989-8037", "name": "Jonalyn Perez", "role": "none", "scriptIndex": 22}, {"phone": "171-1354", "name": "Ronilo Perez", "role": "none", "scriptIndex": 80}, {"phone": "075-9453", "name": "Ranilo Pineda", "role": "none", "scriptIndex": 3}, {"phone": "233-5829", "name": "Rosanna Pineda", "role": "none", "scriptIndex": 23}, {"phone": "026-5912", "name": "Jhonel Pizarro", "role": "none", "scriptIndex": 33}, {"phone": "118-1592", "name": "Leni Pizarro", "role": "none", "scriptIndex": 27}, {"phone": "093-0771", "name": "Wilhelmina Pizarro", "role": "none", "scriptIndex": 19}, {"phone": "395-1847", "name": "Jhun Polintan", "role": "none", "scriptIndex": 50}, {"phone": "466-8368", "name": "Chesca Portugal", "role": "none", "scriptIndex": 18}, {"phone": "144-5425", "name": "Diosdado Portugal", "role": "none", "scriptIndex": 47}, {"phone": "477-1615", "name": "Yolanda Portugal", "role": "none", "scriptIndex": 42}, {"phone": "955-4781", "name": "Fidel Prado", "role": "none", "scriptIndex": 43}, {"phone": "653-9730", "name": "Jhun-jhun Prado", "role": "none", "scriptIndex": 43}, {"phone": "563-5530", "name": "Jinky Prado", "role": "none", "scriptIndex": 79}, {"phone": "421-9022", "name": "Kyla Prado", "role": "none", "scriptIndex": 26}, {"phone": "900-5055", "name": "Rustan Prado", "role": "none", "scriptIndex": 28}, {"phone": "763-5666", "name": "Christian Prieto", "role": "none", "scriptIndex": 16}, {"phone": "041-0742", "name": "Ranilo Prieto", "role": "none", "scriptIndex": 11}, {"phone": "656-2762", "name": "Cynthia Quezon", "role": "none", "scriptIndex": 37}, {"phone": "296-3836", "name": "Erwin Quezon", "role": "none", "scriptIndex": 73}, {"phone": "540-6859", "name": "Pablo Quezon", "role": "none", "scriptIndex": 34}, {"phone": "226-0710", "name": "Rosario Quezon", "role": "none", "scriptIndex": 10}, {"phone": "941-8701", "name": "Sherilyn Quezon", "role": "none", "scriptIndex": 80}, {"phone": "661-2827", "name": "Claudine Quiambao", "role": "none", "scriptIndex": 17}, {"phone": "500-4114", "name": "Jose Quiambao", "role": "none", "scriptIndex": 99}, {"phone": "663-5590", "name": "Cesar Quimson", "role": "none", "scriptIndex": 3}, {"phone": "789-8843", "name": "Dennis Quimson", "role": "none", "scriptIndex": 4}, {"phone": "316-6691", "name": "Lea Quimson", "role": "none", "scriptIndex": 99}, {"phone": "848-8351", "name": "Marites Quimson", "role": "none", "scriptIndex": 56}, {"phone": "075-5085", "name": "Michelle Quimson", "role": "none", "scriptIndex": 25}, {"phone": "002-0721", "name": "Jerrick Quinto", "role": "none", "scriptIndex": 44}, {"phone": "648-1868", "name": "Chesca Quirino", "role": "none", "scriptIndex": 95}, {"phone": "943-3329", "name": "Christian Quirino", "role": "none", "scriptIndex": 14}, {"phone": "484-2780", "name": "Jayson Quirino", "role": "none", "scriptIndex": 54}, {"phone": "764-8499", "name": "Jenina Quirino", "role": "none", "scriptIndex": 77}, {"phone": "607-1786", "name": "Neneng Rabago", "role": "none", "scriptIndex": 86}, {"phone": "820-2621", "name": "Nesty Rabago", "role": "none", "scriptIndex": 93}, {"phone": "921-1560", "name": "Josefa Ragasa", "role": "none", "scriptIndex": 57}, {"phone": "335-1421", "name": "Ritchie Ragasa", "role": "none", "scriptIndex": 14}, {"phone": "178-9042", "name": "Jinggoy Ramirez", "role": "none", "scriptIndex": 42}, {"phone": "621-8348", "name": "Jamila Ramos", "role": "none", "scriptIndex": 17}, {"phone": "467-2440", "name": "Salve Ramos", "role": "none", "scriptIndex": 50}, {"phone": "396-9202", "name": "Vhong Ramos", "role": "none", "scriptIndex": 3}, {"phone": "496-3919", "name": "Juliet Ranada", "role": "none", "scriptIndex": 84}, {"phone": "034-1217", "name": "Bogart Rebong", "role": "none", "scriptIndex": 41}, {"phone": "998-5908", "name": "Claudine Rebong", "role": "none", "scriptIndex": 46}, {"phone": "065-4308", "name": "Joyce Rebong", "role": "none", "scriptIndex": 28}, {"phone": "326-6821", "name": "Pablo Rebong", "role": "none", "scriptIndex": 57}, {"phone": "535-9991", "name": "Roi Rebong", "role": "none", "scriptIndex": 41}, {"phone": "557-8312", "name": "Carmen Recto", "role": "none", "scriptIndex": 82}, {"phone": "457-8653", "name": "Christopher Recto", "role": "none", "scriptIndex": 61}, {"phone": "932-7486", "name": "Dennis Recto", "role": "none", "scriptIndex": 51}, {"phone": "683-5053", "name": "Tessie Recto", "role": "none", "scriptIndex": 87}, {"phone": "910-0197", "name": "Charmaine Regala", "role": "none", "scriptIndex": 32}, {"phone": "941-0697", "name": "Dakila Regala", "role": "none", "scriptIndex": 78}, {"phone": "220-6163", "name": "Cristina Reodica", "role": "none", "scriptIndex": 27}, {"phone": "375-6521", "name": "Erap Reodica", "role": "none", "scriptIndex": 90}, {"phone": "513-4465", "name": "Nico Reodica", "role": "none", "scriptIndex": 74}, {"phone": "784-2060", "name": "Cesar Resurreccion", "role": "none", "scriptIndex": 13}, {"phone": "438-6071", "name": "Melchor Resurreccion", "role": "none", "scriptIndex": 24}, {"phone": "720-3770", "name": "Orland Resurreccion", "role": "none", "scriptIndex": 43}, {"phone": "388-3762", "name": "Rigor Resurreccion", "role": "none", "scriptIndex": 50}, {"phone": "350-8950", "name": "Rowena Resurreccion", "role": "none", "scriptIndex": 0}, {"phone": "407-3568", "name": "Bonifacio Reyes", "role": "none", "scriptIndex": 19}, {"phone": "746-4010", "name": "Girlie Reyes", "role": "none", "scriptIndex": 0}, {"phone": "244-5070", "name": "Jhanine Reyes", "role": "none", "scriptIndex": 80}, {"phone": "835-0916", "name": "Josefa Reyes", "role": "none", "scriptIndex": 22}, {"phone": "191-5993", "name": "Dexter Reynes", "role": "none", "scriptIndex": 66}, {"phone": "366-3401", "name": "Drexler Reynes", "role": "none", "scriptIndex": 5}, {"phone": "334-6401", "name": "Flordeliza Reynes", "role": "none", "scriptIndex": 13}, {"phone": "293-0280", "name": "Juan Reynes", "role": "none", "scriptIndex": 67}, {"phone": "484-3948", "name": "Gwyneth Rigor", "role": "none", "scriptIndex": 91}, {"phone": "138-6367", "name": "Jhoana Rigor", "role": "none", "scriptIndex": 81}, {"phone": "765-8947", "name": "Rhea Rigor", "role": "none", "scriptIndex": 10}, {"phone": "821-3578", "name": "Ryzza Rigor", "role": "none", "scriptIndex": 84}, {"phone": "256-2858", "name": "Elpidio Rivera", "role": "none", "scriptIndex": 52}, {"phone": "222-0924", "name": "Jhanine Rivera", "role": "none", "scriptIndex": 37}, {"phone": "505-7172", "name": "Vicky Rivera", "role": "none", "scriptIndex": 20}, {"phone": "316-2876", "name": "Trinidad Rizal", "role": "none", "scriptIndex": 27}, {"phone": "843-6010", "name": "Jovit Robles", "role": "none", "scriptIndex": 26}, {"phone": "577-0539", "name": "Justine Robles", "role": "none", "scriptIndex": 56}, {"phone": "800-7940", "name": "Shiela Robles", "role": "none", "scriptIndex": 33}, {"phone": "300-5262", "name": "Grace Roces", "role": "none", "scriptIndex": 68}, {"phone": "962-9975", "name": "Ferdinand Rodriguez", "role": "none", "scriptIndex": 5}, {"phone": "853-0006", "name": "Realyn Rodriguez", "role": "none", "scriptIndex": 96}, {"phone": "456-2607", "name": "Ritchie Rodriguez", "role": "none", "scriptIndex": 55}, {"phone": "951-2587", "name": "Aldrin Rojas", "role": "none", "scriptIndex": 11}, {"phone": "338-5764", "name": "Rigor Rojas", "role": "none", "scriptIndex": 45}, {"phone": "100-0828", "name": "Ronald Rojas", "role": "none", "scriptIndex": 24}, {"phone": "417-1527", "name": "Amboy Roldan", "role": "none", "scriptIndex": 3}, {"phone": "487-0919", "name": "Onyok Roldan", "role": "none", "scriptIndex": 86}, {"phone": "722-7007", "name": "Ronald Roldan", "role": "none", "scriptIndex": 43}, {"phone": "615-9830", "name": "Jocelyn Romero", "role": "none", "scriptIndex": 86}, {"phone": "881-0188", "name": "Joel Romero", "role": "none", "scriptIndex": 29}, {"phone": "956-1680", "name": "Nova Romero", "role": "none", "scriptIndex": 46}, {"phone": "543-5632", "name": "Salve Romero", "role": "none", "scriptIndex": 36}, {"phone": "020-6397", "name": "Vivian Romero", "role": "none", "scriptIndex": 67}, {"phone": "061-9608", "name": "Elpidio Rosales", "role": "none", "scriptIndex": 69}, {"phone": "170-8022", "name": "Glaiza Rosales", "role": "none", "scriptIndex": 46}, {"phone": "010-8464", "name": "Juliet Rosales", "role": "none", "scriptIndex": 60}, {"phone": "776-3937", "name": "Tintin Rosales", "role": "none", "scriptIndex": 94}, {"phone": "305-3684", "name": "Junjun Rosario", "role": "none", "scriptIndex": 9}, {"phone": "961-5990", "name": "Mark Rosario", "role": "none", "scriptIndex": 92}, {"phone": "374-1479", "name": "Raffy Rosario", "role": "none", "scriptIndex": 97}, {"phone": "542-2196", "name": "Reynaldo Rosario", "role": "none", "scriptIndex": 21}, {"phone": "473-5049", "name": "Bituin Roxas", "role": "none", "scriptIndex": 78}, {"phone": "385-5381", "name": "Loida Roxas", "role": "none", "scriptIndex": 92}, {"phone": "853-5802", "name": "Vicky Roxas", "role": "none", "scriptIndex": 83}, {"phone": "332-7837", "name": "Janice Ruiz", "role": "none", "scriptIndex": 66}, {"phone": "712-4450", "name": "Joy Ruiz", "role": "none", "scriptIndex": 49}, {"phone": "517-8109", "name": "Pao Ruiz", "role": "none", "scriptIndex": 66}, {"phone": "108-5228", "name": "Ysabel Ruiz", "role": "none", "scriptIndex": 27}, {"phone": "971-3084", "name": "Esperanza Sabado", "role": "none", "scriptIndex": 76}, {"phone": "803-4979", "name": "Kristine Sabado", "role": "none", "scriptIndex": 5}, {"phone": "042-0464", "name": "Marites Sabado", "role": "none", "scriptIndex": 46}, {"phone": "778-9494", "name": "Rubylyn Sabado", "role": "none", "scriptIndex": 14}, {"phone": "885-0803", "name": "Allan Sabalvaro", "role": "none", "scriptIndex": 52}, {"phone": "801-0672", "name": "Drexler Sabalvaro", "role": "none", "scriptIndex": 72}, {"phone": "872-7951", "name": "Elpidio Sabalvaro", "role": "none", "scriptIndex": 33}, {"phone": "673-6566", "name": "Estelita Sabalvaro", "role": "none", "scriptIndex": 38}, {"phone": "514-5269", "name": "May Sabalvaro", "role": "none", "scriptIndex": 61}, {"phone": "249-3700", "name": "Rowena Sabalvaro", "role": "none", "scriptIndex": 57}, {"phone": "854-6375", "name": "Jhun-jhun Saguisag", "role": "none", "scriptIndex": 16}, {"phone": "033-9913", "name": "Pao Saguisag", "role": "none", "scriptIndex": 43}, {"phone": "033-2983", "name": "Precious Saguisag", "role": "none", "scriptIndex": 48}, {"phone": "426-3068", "name": "Jhun-jhun Salcedo", "role": "none", "scriptIndex": 45}, {"phone": "533-2778", "name": "Jinggoy Salcedo", "role": "none", "scriptIndex": 71}, {"phone": "690-1889", "name": "Dexter Salonga", "role": "none", "scriptIndex": 98}, {"phone": "389-7814", "name": "Andres Salvador", "role": "none", "scriptIndex": 74}, {"phone": "392-6931", "name": "Erap Salvador", "role": "none", "scriptIndex": 91}, {"phone": "866-6363", "name": "Jeddah Salvador", "role": "none", "scriptIndex": 49}, {"phone": "439-9394", "name": "Love Salvador", "role": "none", "scriptIndex": 70}, {"phone": "302-4837", "name": "Ming Salvador", "role": "none", "scriptIndex": 65}, {"phone": "647-4402", "name": "Esperanza Samonte", "role": "clue", "scriptIndex": 79, "script": "Not the person you're looking for, pero I know a little something...<clue>may at least isang letter na pareho sa first and last name niya, kahit isang letra lang</clue>, gaya ng 'Leo Lopez' na parehong may 'L'."}, {"phone": "612-5253", "name": "Luzviminda Samonte", "role": "none", "scriptIndex": 87}, {"phone": "738-5123", "name": "Malaya Samonte", "role": "none", "scriptIndex": 65}, {"phone": "194-4173", "name": "Pau Samonte", "role": "none", "scriptIndex": 93}, {"phone": "026-5111", "name": "Diwata San Diego", "role": "none", "scriptIndex": 69}, {"phone": "074-0742", "name": "Jea San Diego", "role": "none", "scriptIndex": 44}, {"phone": "608-0651", "name": "Joanna San Diego", "role": "none", "scriptIndex": 65}, {"phone": "752-5447", "name": "Diosdado San Juan", "role": "none", "scriptIndex": 80}, {"phone": "985-4349", "name": "Gloria San Juan", "role": "none", "scriptIndex": 24}, {"phone": "002-1526", "name": "Malaya San Juan", "role": "none", "scriptIndex": 53}, {"phone": "361-0797", "name": "Jayvee San Pedro", "role": "none", "scriptIndex": 73}, {"phone": "740-9386", "name": "Leizel San Pedro", "role": "none", "scriptIndex": 4}, {"phone": "410-8755", "name": "Shiela San Pedro", "role": "none", "scriptIndex": 13}, {"phone": "146-3804", "name": "Vergel San Pedro", "role": "none", "scriptIndex": 55}, {"phone": "438-9560", "name": "Jopay Sanchez", "role": "none", "scriptIndex": 11}, {"phone": "238-2615", "name": "Ming Sanchez", "role": "none", "scriptIndex": 44}, {"phone": "221-3817", "name": "Janice Sandoval", "role": "none", "scriptIndex": 45}, {"phone": "760-2531", "name": "Rhea Sandoval", "role": "none", "scriptIndex": 16}, {"phone": "225-0117", "name": "Jessa Sangalang", "role": "none", "scriptIndex": 43}, {"phone": "439-5003", "name": "Laarni Sangalang", "role": "none", "scriptIndex": 45}, {"phone": "432-0520", "name": "Consolacion Santiago", "role": "none", "scriptIndex": 14}, {"phone": "995-8083", "name": "Noel Santiago", "role": "none", "scriptIndex": 48}, {"phone": "707-3978", "name": "Cherry Santillan", "role": "none", "scriptIndex": 24}, {"phone": "558-2947", "name": "Ivy Santillan", "role": "none", "scriptIndex": 71}, {"phone": "439-6370", "name": "Rosanna Santillan", "role": "none", "scriptIndex": 67}, {"phone": "725-1388", "name": "Elpidio Santo Domingo", "role": "none", "scriptIndex": 30}, {"phone": "766-9325", "name": "Liwayway Santo Domingo", "role": "none", "scriptIndex": 89}, {"phone": "631-3203", "name": "Vener Santo Domingo", "role": "none", "scriptIndex": 29}, {"phone": "485-4350", "name": "Angelo Santos", "role": "none", "scriptIndex": 81}, {"phone": "551-2758", "name": "Justine Santos", "role": "none", "scriptIndex": 83}, {"phone": "397-6431", "name": "Love Santos", "role": "none", "scriptIndex": 39}, {"phone": "224-0480", "name": "Luzviminda Santos", "role": "none", "scriptIndex": 92}, {"phone": "479-8669", "name": "Pablo Santos", "role": "none", "scriptIndex": 44}, {"phone": "065-6304", "name": "Ricardo Santos", "role": "none", "scriptIndex": 75}, {"phone": "331-8005", "name": "Aiza Sarmiento", "role": "none", "scriptIndex": 68}, {"phone": "040-7078", "name": "Christopher Sarmiento", "role": "none", "scriptIndex": 95}, {"phone": "224-0326", "name": "Jhanine Sebastian", "role": "none", "scriptIndex": 34}, {"phone": "027-9195", "name": "Virgie Sebastian", "role": "none", "scriptIndex": 60}, {"phone": "256-0423", "name": "Mabel Serrano", "role": "none", "scriptIndex": 8}, {"phone": "610-3697", "name": "Reynaldo Sevilla", "role": "none", "scriptIndex": 19}, {"phone": "523-1894", "name": "Roel Sevilla", "role": "none", "scriptIndex": 42}, {"phone": "951-4381", "name": "Angelo Sibayan", "role": "none", "scriptIndex": 94}, {"phone": "151-1076", "name": "Ma-anne Sibayan", "role": "none", "scriptIndex": 85}, {"phone": "665-2688", "name": "Allan Sicat", "role": "none", "scriptIndex": 98}, {"phone": "876-6643", "name": "Glenda Sicat", "role": "none", "scriptIndex": 66}, {"phone": "226-1035", "name": "Malaya Sicat", "role": "none", "scriptIndex": 41}, {"phone": "291-7355", "name": "Ronilo Sicat", "role": "none", "scriptIndex": 0}, {"phone": "905-1412", "name": "Elpidio Silang", "role": "none", "scriptIndex": 25}, {"phone": "826-8666", "name": "Leizel Silang", "role": "none", "scriptIndex": 52}, {"phone": "226-9265", "name": "Lualhati Silang", "role": "none", "scriptIndex": 37}, {"phone": "634-4026", "name": "Archie Silva", "role": "none", "scriptIndex": 6}, {"phone": "226-3590", "name": "Noel Silva", "role": "none", "scriptIndex": 34}, {"phone": "142-3385", "name": "Gerald Simbulan", "role": "none", "scriptIndex": 1}, {"phone": "582-4930", "name": "Glenda Simbulan", "role": "none", "scriptIndex": 52}, {"phone": "070-3846", "name": "Ariel Solano", "role": "none", "scriptIndex": 51}, {"phone": "654-0496", "name": "Reynaldo Solano", "role": "none", "scriptIndex": 35}, {"phone": "905-9198", "name": "Angelica Solis", "role": "none", "scriptIndex": 2}, {"phone": "699-3945", "name": "Pablo Solis", "role": "none", "scriptIndex": 13}, {"phone": "767-2532", "name": "Rechel Solis", "role": "none", "scriptIndex": 83}, {"phone": "054-5882", "name": "Rosanna Solis", "role": "none", "scriptIndex": 65}, {"phone": "696-1946", "name": "Justine Sotto", "role": "none", "scriptIndex": 89}, {"phone": "321-2041", "name": "Maria Sotto", "role": "none", "scriptIndex": 56}, {"phone": "709-6512", "name": "Mark Sotto", "role": "none", "scriptIndex": 48}, {"phone": "695-6999", "name": "Glenda Suarez", "role": "none", "scriptIndex": 76}, {"phone": "216-4335", "name": "Janice Suarez", "role": "none", "scriptIndex": 78}, {"phone": "661-0645", "name": "Darlene Sumagaysay", "role": "none", "scriptIndex": 9}, {"phone": "633-5925", "name": "Krystal Sumagaysay", "role": "none", "scriptIndex": 44}, {"phone": "323-2473", "name": "Mabel Sumagaysay", "role": "none", "scriptIndex": 97}, {"phone": "558-4745", "name": "Vergel Sumagaysay", "role": "none", "scriptIndex": 78}, {"phone": "821-8907", "name": "Jocelyn Sunga", "role": "none", "scriptIndex": 78}, {"phone": "527-9421", "name": "Ambrosio Suson", "role": "none", "scriptIndex": 82}, {"phone": "662-5482", "name": "Benigno Suson", "role": "none", "scriptIndex": 34}, {"phone": "186-2209", "name": "Shiela Suson", "role": "none", "scriptIndex": 11}, {"phone": "906-1453", "name": "Gerlie Tabora", "role": "none", "scriptIndex": 20}, {"phone": "833-8056", "name": "Roel Tabora", "role": "none", "scriptIndex": 16}, {"phone": "680-5869", "name": "Rowel Tabora", "role": "none", "scriptIndex": 41}, {"phone": "268-2647", "name": "Elpidio Tagle", "role": "none", "scriptIndex": 12}, {"phone": "238-0860", "name": "Jerome Tagle", "role": "none", "scriptIndex": 59}, {"phone": "962-6086", "name": "Pablo Tagle", "role": "none", "scriptIndex": 77}, {"phone": "260-7529", "name": "Roxanne Tagle", "role": "none", "scriptIndex": 45}, {"phone": "549-8808", "name": "Clarissa Talampas", "role": "none", "scriptIndex": 17}, {"phone": "938-4833", "name": "Dranreb Talampas", "role": "none", "scriptIndex": 33}, {"phone": "519-9977", "name": "Laarni Talampas", "role": "none", "scriptIndex": 39}, {"phone": "985-6951", "name": "Lea Talampas", "role": "none", "scriptIndex": 60}, {"phone": "746-6887", "name": "Emilio Tamayo", "role": "none", "scriptIndex": 32}, {"phone": "348-1827", "name": "Josefa Tamayo", "role": "none", "scriptIndex": 14}, {"phone": "179-7612", "name": "Mark Tan", "role": "none", "scriptIndex": 27}, {"phone": "469-2340", "name": "Queenie Tan", "role": "none", "scriptIndex": 36}, {"phone": "686-6937", "name": "Cynthia Tanchico", "role": "none", "scriptIndex": 37}, {"phone": "454-2110", "name": "Ivan Tanchico", "role": "none", "scriptIndex": 35}, {"phone": "375-5933", "name": "Jhoana Tanchico", "role": "none", "scriptIndex": 15}, {"phone": "728-8041", "name": "Sergio Tanchico", "role": "none", "scriptIndex": 58}, {"phone": "152-4352", "name": "Jerome Tangco", "role": "none", "scriptIndex": 24}, {"phone": "080-7369", "name": "Maria Tangco", "role": "none", "scriptIndex": 75}, {"phone": "285-4089", "name": "Love Tanjuatco", "role": "none", "scriptIndex": 90}, {"phone": "324-2854", "name": "Tessie Tanjuatco", "role": "none", "scriptIndex": 86}, {"phone": "587-3804", "name": "Corazon Tantoco", "role": "none", "scriptIndex": 69}, {"phone": "215-9373", "name": "Jose Tantoco", "role": "none", "scriptIndex": 78}, {"phone": "204-4706", "name": "Sherilyn Tantoco", "role": "none", "scriptIndex": 5}, {"phone": "880-5697", "name": "Elvis Tapia", "role": "none", "scriptIndex": 96}, {"phone": "957-7793", "name": "Rechel Tapia", "role": "none", "scriptIndex": 42}, {"phone": "369-4102", "name": "Cynthia Teodoro", "role": "none", "scriptIndex": 86}, {"phone": "129-2174", "name": "Juliet Teodoro", "role": "none", "scriptIndex": 25}, {"phone": "101-8017", "name": "Reymark Teodoro", "role": "none", "scriptIndex": 82}, {"phone": "405-4497", "name": "Angel Tolentino", "role": "none", "scriptIndex": 23}, {"phone": "486-9007", "name": "Elmer Tolentino", "role": "none", "scriptIndex": 76}, {"phone": "429-0256", "name": "Araw Torres", "role": "none", "scriptIndex": 30}, {"phone": "344-2147", "name": "Arman Torres", "role": "none", "scriptIndex": 49}, {"phone": "887-0422", "name": "Dolly Torres", "role": "none", "scriptIndex": 96}, {"phone": "533-3621", "name": "Estelita Torres", "role": "none", "scriptIndex": 37}, {"phone": "434-7957", "name": "Ronald Torres", "role": "none", "scriptIndex": 63}, {"phone": "217-9783", "name": "Cristina Trillana", "role": "none", "scriptIndex": 44}, {"phone": "967-6561", "name": "Kim Trillana", "role": "none", "scriptIndex": 27}, {"phone": "106-2200", "name": "Lea Trillana", "role": "none", "scriptIndex": 66}, {"phone": "595-6046", "name": "Lito Trillana", "role": "none", "scriptIndex": 24}, {"phone": "963-6929", "name": "Mila Trinidad", "role": "none", "scriptIndex": 11}, {"phone": "836-9086", "name": "Allan Umali", "role": "none", "scriptIndex": 28}, {"phone": "009-7622", "name": "Jomar Umali", "role": "none", "scriptIndex": 37}, {"phone": "497-3510", "name": "Junjun Uy", "role": "none", "scriptIndex": 53}, {"phone": "695-6624", "name": "Marites Uy", "role": "none", "scriptIndex": 19}, {"phone": "097-3027", "name": "Ranilo Uy", "role": "none", "scriptIndex": 35}, {"phone": "884-4065", "name": "Renz Uy", "role": "none", "scriptIndex": 38}, {"phone": "652-6655", "name": "Cherry Valderrama", "role": "none", "scriptIndex": 88}, {"phone": "719-8624", "name": "Elmer Valderrama", "role": "none", "scriptIndex": 36}, {"phone": "273-1169", "name": "Janine Valderrama", "role": "none", "scriptIndex": 12}, {"phone": "883-8019", "name": "Jopay Valderrama", "role": "none", "scriptIndex": 49}, {"phone": "125-6730", "name": "Manuel Valderrama", "role": "none", "scriptIndex": 45}, {"phone": "841-4415", "name": "Andres Valdez", "role": "none", "scriptIndex": 6}, {"phone": "137-5131", "name": "Claudine Valdez", "role": "none", "scriptIndex": 15}, {"phone": "722-4873", "name": "Glaiza Valdez", "role": "none", "scriptIndex": 38}, {"phone": "511-2280", "name": "Remedios Valdez", "role": "none", "scriptIndex": 48}, {"phone": "083-4458", "name": "Bembol Valenzuela", "role": "none", "scriptIndex": 28}, {"phone": "882-3853", "name": "Carmen Valenzuela", "role": "none", "scriptIndex": 9}, {"phone": "239-7724", "name": "Diwata Valenzuela", "role": "none", "scriptIndex": 86}, {"phone": "819-2692", "name": "Diwata Vargas", "role": "none", "scriptIndex": 88}, {"phone": "402-8019", "name": "Joanna Vargas", "role": "none", "scriptIndex": 95}, {"phone": "559-2588", "name": "Kim Vargas", "role": "none", "scriptIndex": 85}, {"phone": "790-4331", "name": "Mila Vargas", "role": "none", "scriptIndex": 5}, {"phone": "460-6077", "name": "Fidel Vasquez", "role": "none", "scriptIndex": 54}, {"phone": "773-2240", "name": "Joel Vasquez", "role": "none", "scriptIndex": 1}, {"phone": "863-8785", "name": "Ramon Vasquez", "role": "none", "scriptIndex": 82}, {"phone": "602-8199", "name": "Rubylyn Vasquez", "role": "none", "scriptIndex": 90}, {"phone": "789-2252", "name": "Dennis Vega", "role": "none", "scriptIndex": 94}, {"phone": "248-0517", "name": "Ferdie Vega", "role": "none", "scriptIndex": 19}, {"phone": "772-9761", "name": "Joanna Vega", "role": "none", "scriptIndex": 34}, {"phone": "946-9248", "name": "Rosa Vega", "role": "none", "scriptIndex": 27}, {"phone": "455-0152", "name": "Zeny Vega", "role": "none", "scriptIndex": 54}, {"phone": "990-5236", "name": "Consolacion Velasco", "role": "none", "scriptIndex": 93}, {"phone": "906-8797", "name": "Donabel Velasco", "role": "none", "scriptIndex": 60}, {"phone": "780-0793", "name": "Marvin Velasco", "role": "none", "scriptIndex": 56}, {"phone": "332-0916", "name": "Jeddah Velasquez", "role": "none", "scriptIndex": 59}, {"phone": "847-1320", "name": "Lea Velasquez", "role": "none", "scriptIndex": 58}, {"phone": "503-6809", "name": "Remedios Velasquez", "role": "none", "scriptIndex": 70}, {"phone": "239-4334", "name": "Charmaine Velez", "role": "none", "scriptIndex": 90}, {"phone": "645-1376", "name": "Nova Velez", "role": "none", "scriptIndex": 76}, {"phone": "110-8032", "name": "Ritchie Velez", "role": "none", "scriptIndex": 55}, {"phone": "931-2161", "name": "Jaica Vergara", "role": "none", "scriptIndex": 37}, {"phone": "608-7699", "name": "Rosanna Vergara", "role": "none", "scriptIndex": 9}, {"phone": "454-5759", "name": "Gerlie Vicencio", "role": "none", "scriptIndex": 90}, {"phone": "027-4942", "name": "Kenneth Vicencio", "role": "none", "scriptIndex": 30}, {"phone": "509-6018", "name": "Vergel Vidal", "role": "none", "scriptIndex": 33}, {"phone": "428-8907", "name": "Vivian Vidal", "role": "none", "scriptIndex": 86}, {"phone": "156-3505", "name": "Pao Vigilia", "role": "none", "scriptIndex": 13}, {"phone": "135-7826", "name": "Ricardo Vigilia", "role": "none", "scriptIndex": 70}, {"phone": "351-1975", "name": "Allan Villafuerte", "role": "none", "scriptIndex": 15}, {"phone": "791-4941", "name": "Dexter Villafuerte", "role": "none", "scriptIndex": 53}, {"phone": "851-2273", "name": "Ryzza Villafuerte", "role": "none", "scriptIndex": 72}, {"phone": "244-9368", "name": "Heherson Villamor", "role": "none", "scriptIndex": 21}, {"phone": "966-2068", "name": "Kristine Villamor", "role": "none", "scriptIndex": 65}, {"phone": "367-9692", "name": "Lualhati Villamor", "role": "none", "scriptIndex": 59}, {"phone": "690-7054", "name": "Vilma Villamor", "role": "none", "scriptIndex": 50}, {"phone": "412-4460", "name": "Leni Villanueva", "role": "none", "scriptIndex": 48}, {"phone": "851-5345", "name": "Princess Villanueva", "role": "none", "scriptIndex": 50}, {"phone": "917-6102", "name": "Reyland Villanueva", "role": "none", "scriptIndex": 52}, {"phone": "309-6689", "name": "Rubylyn Villanueva", "role": "none", "scriptIndex": 72}, {"phone": "175-1354", "name": "Allan Villar", "role": "none", "scriptIndex": 34}, {"phone": "880-7438", "name": "Kaye Villar", "role": "none", "scriptIndex": 78}, {"phone": "219-3371", "name": "Aldrin Villareal", "role": "none", "scriptIndex": 21}, {"phone": "717-5761", "name": "Antonio Villareal", "role": "none", "scriptIndex": 99}, {"phone": "071-0750", "name": "Honeylet Villareal", "role": "none", "scriptIndex": 99}, {"phone": "828-1025", "name": "Junjun Villareal", "role": "none", "scriptIndex": 94}, {"phone": "299-4740", "name": "Mabel Villareal", "role": "none", "scriptIndex": 4}, {"phone": "788-5095", "name": "Vilma Villareal", "role": "none", "scriptIndex": 83}, {"phone": "141-8498", "name": "Bogs Villaruel", "role": "none", "scriptIndex": 96}, {"phone": "279-6807", "name": "Wilhelmina Villaruel", "role": "none", "scriptIndex": 70}, {"phone": "446-0027", "name": "Arvin Villegas", "role": "none", "scriptIndex": 8}, {"phone": "646-0964", "name": "Charmaine Villegas", "role": "none", "scriptIndex": 2}, {"phone": "156-7135", "name": "Rowena Villegas", "role": "none", "scriptIndex": 55}, {"phone": "576-4911", "name": "Tintin Villegas", "role": "none", "scriptIndex": 41}, {"phone": "162-5091", "name": "Jhun Viray", "role": "none", "scriptIndex": 69}, {"phone": "066-9011", "name": "Melchor Viray", "role": "none", "scriptIndex": 53}, {"phone": "624-7015", "name": "Michael Viray", "role": "none", "scriptIndex": 55}, {"phone": "655-6843", "name": "Realyn Viray", "role": "none", "scriptIndex": 56}, {"phone": "286-1524", "name": "Esperanza Vitug", "role": "none", "scriptIndex": 48}, {"phone": "840-6525", "name": "Estelita Vitug", "role": "none", "scriptIndex": 93}, {"phone": "665-5493", "name": "Darwin Yabut", "role": "none", "scriptIndex": 31}, {"phone": "319-6537", "name": "Ivy Yabut", "role": "none", "scriptIndex": 75}, {"phone": "075-1344", "name": "Joanna Yabut", "role": "none", "scriptIndex": 21}, {"phone": "794-7498", "name": "Bonifacio Yambao", "role": "none", "scriptIndex": 65}, {"phone": "665-8928", "name": "Ivan Yambao", "role": "none", "scriptIndex": 67}, {"phone": "713-6291", "name": "Imelda Yap", "role": "none", "scriptIndex": 97}, {"phone": "351-3335", "name": "Janine Yap", "role": "none", "scriptIndex": 58}, {"phone": "147-4772", "name": "Jhun-jhun Yap", "role": "none", "scriptIndex": 90}, {"phone": "190-0230", "name": "Jonalyn Yap", "role": "none", "scriptIndex": 85}, {"phone": "451-8951", "name": "Artemio Ybanez", "role": "none", "scriptIndex": 67}, {"phone": "896-4315", "name": "Aldous Yulo", "role": "none", "scriptIndex": 97}, {"phone": "147-6717", "name": "Amboy Yulo", "role": "none", "scriptIndex": 67}, {"phone": "448-0715", "name": "Gerald Yulo", "role": "none", "scriptIndex": 1}, {"phone": "052-9560", "name": "Jerrick Yulo", "role": "none", "scriptIndex": 45}, {"phone": "713-7412", "name": "Roi Yulo", "role": "none", "scriptIndex": 52}, {"phone": "265-2735", "name": "Zaldy Yulo", "role": "none", "scriptIndex": 66}, {"phone": "957-9355", "name": "Elton Zamora", "role": "none", "scriptIndex": 28}, {"phone": "603-8595", "name": "Juliet Zamora", "role": "none", "scriptIndex": 66}, {"phone": "404-8128", "name": "Rodelyn Zamora", "role": "none", "scriptIndex": 39}, {"phone": "472-3434", "name": "Angelo Zapanta", "role": "none", "scriptIndex": 54}, {"phone": "228-0056", "name": "Elmer Zapanta", "role": "none", "scriptIndex": 5}, {"phone": "981-2419", "name": "Michael Zapanta", "role": "none", "scriptIndex": 89}, {"phone": "145-5707", "name": "Donita Zaragoza", "role": "none", "scriptIndex": 37}, {"phone": "805-5139", "name": "May Zaragoza", "role": "none", "scriptIndex": 9}, {"phone": "976-3909", "name": "Roel Zaragoza", "role": "none", "scriptIndex": 95}, {"phone": "055-1612", "name": "Rustan Zaragoza", "role": "none", "scriptIndex": 13}, {"phone": "134-1476", "name": "Nesty Zobel", "role": "none", "scriptIndex": 20}, {"phone": "534-4425", "name": "Glenn Zulueta", "role": "none", "scriptIndex": 94}, {"phone": "922-8954", "name": "Irish Zulueta", "role": "none", "scriptIndex": 92}, {"phone": "8080", "name": "", "role": "special", "scriptIndex": 95, "script": "\u260e\ufe0f You've reached the special line. Here's your clue: <clue>nagsisimula sa consonant yung first name niya</clue>, think 'Bogart', not 'Ana'."}, {"phone": "911", "name": "", "role": "special", "scriptIndex": 24, "script": "\ud83d\udea8 Emergency line 'to, but don't worry, walang crisis dito. Clue: <clue>hindi nag-eend sa vowel yung last name niya</clue>, edi hindi siya 'Garcia' o 'Mendoza'."}, {"phone": "4627", "name": "", "role": "special", "scriptIndex": 92, "script": "\ud83d\udce1 ...static... connection established. Clue: <clue>hindi nagsisimula sa parehong letra yung first and last name niya</clue>. Peter Parker? Wrong guess, di pwede dito."}, {"phone": "143", "name": "", "role": "special", "scriptIndex": 67, "script": "\ud83d\udc8c 143 \u2014 I love you, they say. Pero mas importante 'tong clue na 'to: <clue>same number of vowels yung first and last name niya</clue> parang 'Mia Santos', 2 and 2, balanced love."}, {"phone": "9999", "name": "", "role": "special", "scriptIndex": 49, "script": "\ud83d\udd14 Listen closely: <clue>exactly two letters lang ang pareho sa first and last name niya, and same order sila lumalabas</clue> parang yung 'CR' sa 'CaRla CRuz', dalawang letra lang, magkasunod pa. Pero mali ang 'JuAN NAtividad'"}, {"phone": "2210", "name": "Manok na Sabungero, Retirado Na", "role": "decoy", "scriptIndex": 0, "script": "Retired na siya sa laban pero guaranteed makakagising ka ng maaga kada umaga. Super bait naman, hindi mananakit. \u20b12,500 nego pa!"}, {"phone": "5567", "name": "Nawawalang Aso \u2014 \"Bantay\"", "role": "decoy", "scriptIndex": 0, "script": "Brown, parang kulay tsokolate, may spot sa isang tainga. Last seen malapit sa sari-sari store namin. May reward kapag na-find!"}, {"phone": "3384", "name": "PLUMBER \u2014 24/7", "role": "decoy", "scriptIndex": 0, "script": "May tumutulo bang gripo? Or clogged toilet? We fix it agad, walang delay."}, {"phone": "728", "name": "Room for Rent", "role": "decoy", "scriptIndex": 0, "script": "Malapit sa terminal, may sariling C.R. Quiet neighborhood, bawal maingay. \u20b13,000 a month lang."}, {"phone": "9042", "name": "House Helper Needed (Part-Time)", "role": "decoy", "scriptIndex": 0, "script": "Twice a week lang, laundry and cleaning. Malapit sa palengke, may pamasahe."}, {"phone": "156", "name": "Love Letter Writer", "role": "decoy", "scriptIndex": 0, "script": "Kulang sa lyrics ang puso mo? We got you. Guaranteed kilig or your money back."}, {"phone": "6673", "name": "Sari-Sari Store Help", "role": "decoy", "scriptIndex": 0, "script": "Part-time, weekends lang. Marunong magbilang ng sukli at hindi antok-antok sa duty."}, {"phone": "2901", "name": "Manok Cleaning Before Cooking", "role": "decoy", "scriptIndex": 0, "script": "Para sa mga super busy, we clean and prep your manok for you. Same-day service available."}, {"phone": "4471", "name": "Fighting Cock Accessories, Buy 2 Take 1", "role": "decoy", "scriptIndex": 0, "script": "Spurs, gaffs, at leg bands \u2014 mostly barely used na lang. Sayang kung di magagamit, kaya sale na lang."}, {"phone": "2288", "name": "Tuli Services, Summer Special", "role": "decoy", "scriptIndex": 0, "script": "Bulk booking pa, may discount para sa mga magkakapatid. First come, first serve lang."}, {"phone": "5019", "name": "Ice Cream Vendor Needed", "role": "decoy", "scriptIndex": 0, "script": "May sariling bell required, energetic lang dapat ang boses. Commission-based, malaking kita tuwing summer."}, {"phone": "4418", "name": "Traysikel, Konting Ayos Na Lang", "role": "decoy", "scriptIndex": 0, "script": "Ready for business agad, may konting scratch lang sa gilid. Engine's still strong naman. \u20b135,000, nego."}, {"phone": "815", "name": "Pet Sitting", "role": "decoy", "scriptIndex": 0, "script": "Aalagaan namin ang pet mo habang wala ka. Dogs, cats, kahit fish \u2014 pro na kami dito."}, {"phone": "3350", "name": "House Painter", "role": "decoy", "scriptIndex": 0, "script": "Pati pader ng kapitbahay pwede rin kung gusto niyo, sabay na lang. May discount kung dalawang bahay sabay."}, {"phone": "7726", "name": "Tomato Farming Buddy", "role": "decoy", "scriptIndex": 0, "script": "Morning lang, bago talaga sumikat ang araw. Marunong mag-water ng tanim at hindi natatakot sa uod."}, {"phone": "990", "name": "Home Service Haircut", "role": "decoy", "scriptIndex": 0, "script": "Bahay-bahay kami, walang pila. Rate depende kung fade or regular trim lang."}, {"phone": "3067", "name": "Kalan, Gumagana Pero May Konting Amoy Gas", "role": "decoy", "scriptIndex": 0, "script": "Baka connection lang, di pa namin na-check. Functional naman as-is, buyer's discretion na lang."}, {"phone": "8845", "name": "Aircon Cleaning, Bago ang Tag-init", "role": "decoy", "scriptIndex": 0, "script": "Book na agad bago mag-peak season. Same-day service kung malapit lang sa area namin."}, {"phone": "174", "name": "Manininda ng Taho Tuwing Umaga", "role": "decoy", "scriptIndex": 0, "script": "Alas-singko ng umaga simula, tapos na by 9am. Kailangan lang malakas maglakad at mahusay magsigaw ng \"Tahooo!\""}];
+const WRONG_SCRIPTS = [["😕", "Ay, mali yata ang linya... hindi ko po kilala 'yang tao na 'yan."], ["😤", "Uy, ilang beses na ba 'to? Wrong number na naman, ha!"], ["😴", "Hmm... *yawns* ...sino 'to? Mali number, matulog na nga ako ulit."], ["🎭", "HINDI. AKO. ANG. HINAHANAP. MO. Tapusin mo na 'yang paghahanap na 'yan!"], ["⏱️", "Sorry ha, wala akong panahon diyan, mali number 'to!"], ["🙏", "Pasensya na po, mali po yata ang tinawagan n'yo. Hindi po ako 'yan."], ["😏", "Aww, gusto mo ba talaga ako? Kasi hindi ako 'yung hinahanap mo, bes~"], ["🤨", "Bakit mo ko tinatawagan? Sino ka ba? Wala akong kinalaman diyan."], ["😨", "Ano?! Hindi, hindi ako 'yan! Wag mo kong idamay, please!"], ["😐", "...mali number. Bye."], ["😠", "GRABE KA, ilang beses ko nang sinasabing MALI NUMBER 'TO!"], ["😢", "Sana nga ako 'yung hinahanap mo... pero hindi. Paalam."], ["👵", "Iho, ang tanda ko na para makipaglaro sa mga bugtong n'yo. Mali 'yang number."], ["🧐", "Good day. This is not the individual you are attempting to reach. Please verify your records."], ["🥴", "Weeeh? Sinong 'to? Ay hindi... teka... hindi ako 'yan! *hic*"], ["🧒", "Hoy! Bata pa ko ah, wag mo ko tawagan, hindi kita kilala!"], ["🤑", "Oh hi! Bago tayo mag-usap, ikaw ba nanalo sa raffle? Ah wait, mali number pala 'to."], ["🤔", "Sino ba talaga tayo? Ang alam ko lang, hindi ako ang hinahanap mo."], ["😎", "Chill lang, bro. Mali lang number, walang bigyan."], ["😰", "Sino'ng nagbigay sa'yo ng number ko?! Hindi ako 'yan, layuan mo 'ko!"], ["😊", "Kamusta! Sayang, hindi ako 'yung hinahanap mo, pero kwentuhan pa rin tayo?"], ["🥱", "Ay iho, wala akong oras diyan, may mga anak akong iniintindi. Mali number 'to."], ["🕵️", "...hindi mo ako makikilala. At hindi ako ang hinahanap mo."], ["🙄", "Wow, ang galing mong humanap. Sayang, mali pa rin."], ["😬", "Uh... ah... hindi... hindi ako po siguro 'yan? Baka mali lang."], ["💅", "Naku, marami akong tagahanga, pero hindi ako 'yang pinaghahanap mo."], ["🙏", "Bless you, iho. Pero hindi ako ang hinahanap mo. Manalangin ka na lang."], ["😂", "Knock knock! Sino 'to? Ah, hindi pala ako 'yung joke mong hinahanap."], ["📏", "Ang dami ko nang pinapaalalahanan, at ito na naman— MALI. NUMBER."], ["🧘", "Huminga ka lang. Hindi ako siya. Subukan mo ulit maghanap."], ["🌟", "Alam mo bang bantay ako ng showbiz? Pero hindi, hindi ako 'yan."], ["💼", "Meeting pa 'to, wag mo 'ko idamay, mali number 'yan!"], ["👴", "Noong bata pa ako... ah teka, mali lang pala 'tong linyang 'to."], ["🚌", "Sabay-sabay tayo diyan pero hindi rin kita kilala, pre. Mali number."], ["🚨", "Uy, curfew na! At saka, hindi ako 'yang tinatawag mo."], ["😱", "OMG bakit ako tinatawagan?! Wag naman sanang ikaw yung ex ko... ay hindi pala, mali number lang."], ["😑", "Mali number. Wala nang iba."], ["😟", "Ay sayang, baka nasa panganib pa 'yung hinahanap mo. Pero hindi ako 'yan."], ["🎯", "Congratulations, tama ka sa pag-dial pero MALI sa sagot! Hindi ako 'yan!"], ["👀", "Sino ka ba? Bakit mo tinatawagan? May balita akong messy dyan sa inyo ha, pero hindi ako 'yan."], ["☔", "Maulan sa labas ngayon... at parang mali rin ang linyang dinial mo."], ["🔮", "Nakikita ko sa bituin... na hindi ako ang hinahanap mo."], ["📞", "Salamat sa pagtawag. Para sa maling number, pindutin ang... wait, wala palang option. Mali lang talaga 'to."], ["💀", "Bes, wrong number, no cap."], ["👻", "...may tumawag ba? ...MALI NUMBER. *phone drops*"], ["🍲", "Nagluluto ako ng sinigang, wag mo 'kong istorbohin, mali number 'yan!"], ["🌌", "Baka hindi lang ako ang mali dito... baka pati ang buong mundo. Pero oo, mali number."], ["🎙️", "Ito ang DJ ng gabi... at ito rin ang paalala— mali number 'to, iho!"], ["🩺", "Duty pa ko, wag mo 'ko tawagan ng ganito. Mali number 'to!"], ["👋", "Pasensya na, hindi nga ako 'yon. Ingat ka lagi. Paalam."], ["🤩", "Whoa, ang saya may tumatawag! Pero, uh... mali number 'to, sorry ha!"], ["☕", "Ano ba 'yan, ang aga-aga may tawag na... at mali pa number! Nakakainis."], ["🤖", "BEEP. Ito ay hindi ang numerong iyong hinahanap. BEEP."], ["😜", "Wag ka nang tumawag dito, hindi ako 'yung hinahanap mo. Mali number!"], ["🤫", "Shh... hindi ako pwedeng magsalita ngayon. Pero oo, mali 'yang number mo."], ["⚡", "AY GRABE ANG TAAS NG CAFFEINE KO— ah wait, mali number pala 'to, hi!"], ["🎶", "Purihin ang Panginoon... at saka, mali number 'to, anak."], ["🎮", "GG wrong number, chat. Di ako 'yung naghahanap mo."], ["🎧", "Magandang araw po! Paumanhin, hindi po kayo nakatawag sa tamang linya."], ["🎣", "Nasa dagat ako ngayon, pre. At mali ka rin ng huli— mali number 'yan."], ["📹", "Hi mga kaibigan— ay teka, may tumatawag. Ay, mali number lang pala. Sige, next vlog na lang!"], ["💐", "Aba, salamat sa pagtawag anak, pero mali yata ito. Ingat ka lagi ha."], ["🏀", "Timeout! Mali number 'to, tara ulit sa laro!"], ["🤷", "Sigurado ka ba diyan sa number na 'yan? Kasi mali 'yan."], ["💻", "Deadline pa 'to, wag mo 'kong istorbohin— at mali number pa!"], ["😈", "Akala mo ba ako 'yun? Hindi mo pa ako mahuhuli. MALI NUMBER."], ["👶", "Ga ga goo... (mommy: sorry, mali number po 'to, baby lang kasi 'to sa phone)."], ["🏄", "Whoa dude, chill lang, mali number. Wave check muna tayo."], ["📐", "Late ka na sa pagtawag AT mali pa number. Zero points."], ["🥠", "Ang tunay na hinahanap mo ay wala rito. Mali number."], ["🎬", "CUT! ...ay teka, hindi pala kunwarian 'to. Mali number talaga."], ["👴", "Noong panahon ko, wala pang cellphone! Pero ngayon, alam kong mali 'yang tinawagan mo."], ["🤡", "Uy is this a prank call? Kasi wrong number 'to, promise."], ["🕉️", "Ang kapayapaan ay nasa paghahanap ng tamang numero. Ito'y hindi iyon."], ["👨‍🍳", "Nasusunog ang ulam ko dahil sa tawag mo! At mali ka pa ng number, hay."], ["🛸", "Sino nagbigay sa'yo ng number ko?? May kumakalat na listahan?! Mali number 'to, layuan mo 'ko!"], ["🎀", "Thank you for calling! Unfortunately, hindi po kayo nasa tamang linya. Have a nice day!"], ["🏚️", "Wag mo kong tawagan, wala kang binabayarang renta dito. Mali number!"], ["🏆", "AND THE CALL... GOES TO... THE WRONG NUMBER! Ladies and gentlemen!"], ["💔", "Akala mo ba babalikan pa kita? Mali number, wag mo na 'ko tawagan."], ["🌪️", "Bagyo sa labas, at bagyo rin sa loob ng puso ko dahil sa maling tawag mo. Mali number."], ["😮‍💨", "Break time ko sana 'to. Mali number, buti pinahinga ako."], ["⚖️", "For the record, hindi ako ang taong hinahanap mo. Objection, mali number."], ["🎩", "Ah, hello po, ito po si... (giggles) ay mali number lang po pala."], ["📚", "Nag-aaral pa ko dito— wait, mali number lang naman. Sige, bye."], ["🙌", "OMG IS THIS MY IDOL?? ...ay hindi pala. Mali number lang. Sayang."], ["🛬", "Bagong uwi lang ako galing abroad, at ito ang una kong maling tawag dito. Mali number."], ["🕶️", "Ang misyon mo ay nabigo. Mali ang target. Mali number."], ["🔔", "TOLL TOLL— ay, tumawag ka pala. Mali number 'yan, anak."], ["🚕", "Traffic pa 'to tapos mali ka pa ng number, sus."], ["☕", "Order ko muna 'to ha... ay hindi pala order, tawag. Mali number, sorry!"], ["🎯", "Final answer ko: MALI NUMBER 'YAN. Tama ba, host?"], ["🎓", "Anak ko nga pala nag-topnotch sa board exam! Pero ikaw, mali number ka dito."], ["🌙", "Graveyard shift pa 'to... at mali ka ng number, buti nagising ako."], ["💬", "beep boop, hindi ako ang AI na hinahanap mo. Mali number, carry on."], ["🖐️", "*SLAP SOUND* Bakit mo ko tinawagan?! Mali number, hindi ako siya!"], ["📴", "Paumanhin, pakibigyang pansin: mali po ang inyong nadayal na numero."], ["🍢", "Tahoooo! ...ay teka, tawag lang pala 'to. Mali number, wala akong ganito dito."], ["🥀", "Kung ikaw talaga ang naghahanap sa akin, sana totoo. Pero mali number lang pala. Paalam magpakailanman."], ["😶", "...mali number. (Wala nang iba pang sasabihin.)"]];
+const TARGET_SCRIPT = "Ano?! Nalason kayo? Oh eto ang cure diyan. Tumalon kayo ng 3 beses at sabay sabay isigaw ang DARNA!";
+const SPECIAL_NUMBERS = ["143", "4627", "8080", "911", "9999"];
+const RESET_CODE = "9990666"; // secret GM-only code: resets the free-call counter
+const RING_MIN_MS = 2 * 1000;
+const RING_MAX_MS = 10 * 1000;
+
+const phoneMap = {};
+PHONEBOOK.forEach(e => {
+  phoneMap[e.phone] = { name: e.name, role: e.role, scriptIndex: e.scriptIndex, script: e.script };
+});
+
+// Every non-7-digit number that's actually dialable: the 5 real specials,
+// every decoy ad number auto-extracted from classifieds.html, and the
+// secret reset code — anything else short just won't enable the Call button.
+const SHORT_CODES = new Set(
+  Object.keys(phoneMap).filter(p => p.length !== 7).concat([RESET_CODE])
+);
+
+// ---------- Sound effects: real telephone tones, synthesized (no audio files) ----------
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+// Plays two sine tones together (a "dual tone") with a short fade in/out to
+// avoid clicks, starting `delay` seconds from now and lasting `duration`.
+function playDualTone(f1, f2, duration, volume, delay) {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const startTime = ctx.currentTime + (delay || 0);
+    const fade = Math.min(0.01, duration / 4);
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + fade);
+    gain.gain.setValueAtTime(volume, startTime + duration - fade);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    [f1, f2].forEach(freq => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  } catch (e) {}
+}
+
+// Standard DTMF (touch-tone) frequency pairs — the actual tones real phone
+// keypads use per digit.
+const DTMF_FREQ = {
+  "1": [697, 1209], "2": [697, 1336], "3": [697, 1477],
+  "4": [770, 1209], "5": [770, 1336], "6": [770, 1477],
+  "7": [852, 1209], "8": [852, 1336], "9": [852, 1477],
+  "*": [941, 1209], "0": [941, 1336], "#": [941, 1477],
+};
+
+function playKeyClick(digit) {
+  const [f1, f2] = DTMF_FREQ[digit] || DTMF_FREQ["#"];
+  playDualTone(f1, f2, 0.09, 0.06, 0);
+}
+
+// Real telephone "reorder"/fast-busy tone (480Hz + 620Hz, 0.25s on/off) —
+// what a real phone plays for an invalid or disconnected number.
+function playUnknownTone() {
+  const pulse = 0.25;
+  for (let i = 0; i < 4; i++) {
+    playDualTone(480, 620, pulse, 0.07, i * pulse * 2);
+  }
+}
+
+// Real North American ringback tone (440Hz + 480Hz), standard 2s-on/4s-off
+// cadence — vibrates in sync with each "on" burst.
+const RING_ON_MS = 2000;
+const RING_OFF_MS = 4000;
+let ringing = false;
+let ringTimerId = null;
+
+function ringPulse() {
+  if (!ringing) return;
+  playDualTone(440, 480, RING_ON_MS / 1000, 0.05, 0);
+  if (navigator.vibrate) navigator.vibrate(RING_ON_MS);
+  ringTimerId = setTimeout(() => {
+    if (!ringing) return;
+    ringTimerId = setTimeout(ringPulse, RING_OFF_MS);
+  }, RING_ON_MS);
+}
+
+function startRinging() {
+  stopRinging();
+  ringing = true;
+  ringPulse();
+}
+function stopRinging() {
+  ringing = false;
+  if (ringTimerId) {
+    clearTimeout(ringTimerId);
+    ringTimerId = null;
+  }
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+function randomRingDuration() {
+  return RING_MIN_MS + Math.random() * (RING_MAX_MS - RING_MIN_MS);
+}
+
+// ---------- Free-call rate limiter (persisted in localStorage) ----------
+const MAX_FREE_CALLS = 5;
+const CALL_COOLDOWN_MS = 5 * 60 * 1000;
+const CALLS_STORAGE_KEY = "cureline_call_limiter";
+
+function loadCallState() {
+  try {
+    const raw = localStorage.getItem(CALLS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.remaining === "number") return parsed;
+    }
+  } catch (e) {}
+  return { remaining: MAX_FREE_CALLS, exhaustedAt: null };
+}
+
+function saveCallState(state) {
+  try {
+    localStorage.setItem(CALLS_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+let callState = loadCallState();
+
+function refreshCallState() {
+  if (callState.remaining <= 0 && callState.exhaustedAt) {
+    const elapsed = Date.now() - callState.exhaustedAt;
+    if (elapsed >= CALL_COOLDOWN_MS) {
+      callState = { remaining: MAX_FREE_CALLS, exhaustedAt: null };
+      saveCallState(callState);
+    }
+  }
+}
+
+const callsIndicatorEl = document.getElementById("calls-indicator");
+
+function renderCallsIndicator() {
+  refreshCallState();
+  if (callState.remaining > 0) {
+    callsIndicatorEl.textContent = `Free Calls: ${callState.remaining}/${MAX_FREE_CALLS}`;
+    callsIndicatorEl.classList.remove("depleted");
+  } else {
+    const remainingMs = Math.max(0, CALL_COOLDOWN_MS - (Date.now() - callState.exhaustedAt));
+    const mins = Math.floor(remainingMs / 60000);
+    const secs = Math.floor((remainingMs % 60000) / 1000);
+    callsIndicatorEl.textContent = `Free Calls: 0/${MAX_FREE_CALLS} — resets in ${mins}:${String(secs).padStart(2, "0")}`;
+    callsIndicatorEl.classList.add("depleted");
+  }
+  renderDisplay();
+}
+
+const KEY_LABELS = [
+  ["1", ""], ["2", "ABC"], ["3", "DEF"],
+  ["4", "GHI"], ["5", "JKL"], ["6", "MNO"],
+  ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"],
+  ["", ""], ["0", "+"], ["", ""]
+];
+
+const keypadEl = document.getElementById("keypad");
+KEY_LABELS.forEach(([num, sub]) => {
+  const btn = document.createElement("button");
+  btn.className = "key";
+  if (!num) { btn.style.visibility = "hidden"; btn.disabled = true; }
+  else {
+    btn.innerHTML = num + (sub ? `<span class="sub">${sub}</span>` : "");
+    btn.addEventListener("click", () => addDigit(num));
+  }
+  keypadEl.appendChild(btn);
+});
+
+let digits = "";
+
+const displayEl = document.getElementById("display");
+const callBtn = document.getElementById("btn-call");
+
+function formatDigits(d) {
+  if (SHORT_CODES.has(d)) return d;
+  if (d.length <= 3) return d;
+  return d.slice(0, 3) + "-" + d.slice(3);
+}
+
+function renderDisplay() {
+  refreshCallState();
+  if (digits.length === 0) {
+    displayEl.textContent = "Enter Number";
+    displayEl.classList.add("placeholder");
+  } else {
+    displayEl.textContent = formatDigits(digits);
+    displayEl.classList.remove("placeholder");
+  }
+  const validNumber = digits.length === 7 || SHORT_CODES.has(digits);
+  const rateLimited = callState.remaining <= 0 && digits !== RESET_CODE;
+  callBtn.disabled = !validNumber || rateLimited;
+}
+
+function addDigit(d) {
+  if (digits.length >= 7) return;
+  playKeyClick(d);
+  digits += d;
+  renderDisplay();
+}
+
+document.getElementById("btn-back").addEventListener("click", () => {
+  playKeyClick();
+  digits = digits.slice(0, -1);
+  renderDisplay();
+});
+document.getElementById("btn-clear").addEventListener("click", () => {
+  playKeyClick();
+  digits = "";
+  renderDisplay();
+});
+
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+let callTimer = null;
+
+callBtn.addEventListener("click", () => {
+  refreshCallState();
+  const isReset = digits === RESET_CODE;
+  if (!(digits.length === 7 || SHORT_CODES.has(digits))) return;
+  if (!isReset && callState.remaining <= 0) return;
+
+  if (!isReset) {
+    callState.remaining -= 1;
+    if (callState.remaining <= 0) {
+      callState.remaining = 0;
+      callState.exhaustedAt = Date.now();
+    }
+    saveCallState(callState);
+    renderCallsIndicator();
+  }
+
+  const formatted = formatDigits(digits);
+  const match = isReset ? null : phoneMap[formatted];
+  document.getElementById("calling-name").textContent = isReset ? "" : (match && match.name ? match.name : "Unknown");
+  document.getElementById("calling-number").textContent = formatted;
+  showView("view-call");
+  startRinging();
+  callTimer = setTimeout(() => resolveCall(formatted, match, isReset), randomRingDuration());
+});
+
+document.getElementById("btn-cancel-call").addEventListener("click", () => {
+  clearTimeout(callTimer);
+  stopRinging();
+  resetToDial();
+});
+
+function resolveCall(formatted, match, isReset) {
+  stopRinging();
+  document.getElementById("result-number").textContent = formatted;
+  const nameEl = document.getElementById("result-name");
+  const textEl = document.getElementById("result-text");
+  const emojiEl = document.getElementById("result-emoji");
+  textEl.classList.remove("target", "not-found");
+
+  if (isReset) {
+    callState = { remaining: MAX_FREE_CALLS, exhaustedAt: null };
+    saveCallState(callState);
+    renderCallsIndicator();
+    nameEl.textContent = "";
+    emojiEl.textContent = "🔓";
+    textEl.textContent = `System reset. Free calls restored to ${MAX_FREE_CALLS}/${MAX_FREE_CALLS}.`;
+  } else if (!match) {
+    playUnknownTone();
+    nameEl.textContent = "";
+    emojiEl.textContent = "🚫";
+    textEl.classList.add("not-found");
+    textEl.textContent = "Number does not exist.";
+  } else {
+    nameEl.textContent = match.name || "";
+    if (match.role === "target") {
+      emojiEl.textContent = "🎉";
+      textEl.classList.add("target");
+      textEl.innerHTML = TARGET_SCRIPT;
+    } else if (match.role === "clue") {
+      emojiEl.textContent = "🔎";
+      textEl.innerHTML = match.script;
+    } else if (match.role === "special") {
+      emojiEl.textContent = "☎️";
+      textEl.innerHTML = match.script;
+    } else if (match.role === "decoy") {
+      emojiEl.textContent = "📻";
+      textEl.textContent = match.script;
+    } else {
+      const [emoji, text] = WRONG_SCRIPTS[match.scriptIndex];
+      emojiEl.textContent = emoji;
+      textEl.textContent = text;
+    }
+  }
+  showView("view-result");
+}
+
+document.getElementById("btn-end-call").addEventListener("click", resetToDial);
+
+function resetToDial() {
+  digits = "";
+  renderDisplay();
+  showView("view-dial");
+}
+
+renderCallsIndicator();
+setInterval(renderCallsIndicator, 1000);
+
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2, "0");
+  document.getElementById("clock").textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 30000);
+</script>
+</body>
+</html>

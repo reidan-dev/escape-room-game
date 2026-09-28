@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="tl">
+<head>
+<meta charset="utf-8">
+<title>Klasipikados</title>
+<style>
+  @page { size: A4; margin: 14mm 11mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #111;
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page { page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  /* ---------- Masthead ---------- */
+  .masthead { text-align: center; margin-bottom: 8px; }
+  .masthead h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 46px;
+    letter-spacing: 3px;
+    margin: 0;
+    font-weight: 900;
+  }
+  .masthead .tagline {
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+    padding: 3px 2px;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .section-title {
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: bold;
+    font-size: 15px;
+    border-top: 3px double #000;
+    border-bottom: 3px double #000;
+    padding: 5px 0;
+    margin: 10px 0 12px;
+  }
+  .page-continued {
+    text-align: center;
+    font-size: 10px;
+    font-style: italic;
+    color: #333;
+    margin: -6px 0 10px;
+  }
+
+  /* ---------- Classifieds grid ---------- */
+  .classifieds {
+    column-count: 3;
+    column-gap: 12px;
+    column-rule: 1px solid #999;
+  }
+  .ad {
+    break-inside: avoid-column;
+    margin-bottom: 9px;
+    padding: 6px 7px;
+    border: 1px solid #000;
+  }
+  .ad .cat {
+    display: block;
+    font-size: 8px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 2px;
+  }
+  .ad .headline {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 3px;
+    line-height: 1.15;
+  }
+  .ad .body {
+    line-height: 1.3;
+  }
+  .ad .phone {
+    display: block;
+    margin-top: 4px;
+    font-weight: bold;
+  }
+
+  /* size/print variants for visual variety — deliberately NOT tied to
+     whether an ad is a "special" one, so box style never hints at
+     significance. */
+  .ad.small { font-size: 8.5px; border-color: #555; }
+  .ad.small .headline { font-size: 9.5px; }
+  .ad.medium { font-size: 9.5px; }
+  .ad.medium .headline { font-size: 11px; }
+  .ad.large {
+    font-size: 10.5px;
+    border-width: 2px;
+    padding: 9px 9px;
+    background: #f3f1ea;
+  }
+  .ad.large .headline { font-size: 14px; text-transform: uppercase; }
+  .ad.dashed { border-style: dashed; }
+  .ad.thick { border-width: 3px; }
+  .ad.noborder { border: none; border-bottom: 1px dotted #666; padding-left: 0; padding-right: 0; }
+  .ad.sans { font-family: Arial, Helvetica, sans-serif; }
+  .ad.mono { font-family: 'Courier New', Courier, monospace; }
+  .ad.shout .headline {
+    font-family: Arial Black, Arial, sans-serif;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .ad.italic-body .body { font-style: italic; }
+  .ad.centered { text-align: center; }
+
+  .disclaimer {
+    font-size: 7.5px;
+    color: #555;
+    border-top: 1px solid #000;
+    margin-top: 10px;
+    padding-top: 4px;
+    text-align: center;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 ============ -->
+<div class="page">
+  <div class="masthead">
+    <h1>ANG DAILY CHISMIS</h1>
+    <div class="tagline">"Balita, Bentahan, at Bulungan — Dahil Alam Namin ang Lahat"</div>
+    <div class="meta-row">
+      <span>Blg. 247 &middot; Taon 12</span>
+      <span>Oktubre 2026</span>
+      <span>Presyo: ₱15.00</span>
+    </div>
+  </div>
+
+  <div class="section-title">Klasipikados &mdash; Classified Ads</div>
+
+  <div class="classifieds">
+
+    <div class="ad medium">
+      <span class="cat">For Sale</span>
+      <span class="headline">Manok na Sabungero, Retirado Na</span>
+      <span class="body">Retired na siya sa laban pero guaranteed makakagising ka ng maaga kada umaga. Super bait naman, hindi mananakit. ₱2,500 nego pa!</span>
+      <span class="phone">Tel: 2210</span>
+    </div>
+
+    <div class="ad small dashed">
+      <span class="cat">Lost</span>
+      <span class="headline">Nawawalang Aso — "Bantay"</span>
+      <span class="body">Brown, parang kulay tsokolate, may spot sa isang tainga. Last seen malapit sa sari-sari store namin. May reward kapag na-find!</span>
+      <span class="phone">5567</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">Serbisyo — Paghula</span>
+      <span class="headline">Manghuhula: Alamin ang Kapalaran Mo!</span>
+      <span class="body">Sikat sa buong bayan as the most accurate manghuhula dito. Tarot reading, palm reading, at marami pang iba. Open 24/7, no appointment needed.</span>
+      <span class="phone">8080</span>
+    </div>
+
+    <div class="ad small sans">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Kailangan: Dishwasher</span>
+      <span class="body">Clean hands lang ang required, no experience needed naman. May free meals habang nagtatrabaho ka. Drop by na lang sa Kusina ni Aling Rosa, malapit sa plaza.</span>
+    </div>
+
+    <div class="ad medium mono">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">PLUMBER — 24/7</span>
+      <span class="body">May tumutulo bang gripo? Or clogged toilet? We fix it agad, walang delay.</span>
+      <span class="phone">3384</span>
+    </div>
+
+    <div class="ad medium dashed">
+      <span class="cat">Personal</span>
+      <span class="headline">Hinahanap Kita...</span>
+      <span class="body">Sa taong naghahanap ng answers — this isn't just your typical personal ad. May story pa akong hindi tapos. Tumawag ka at malalaman mo ang totoo.</span>
+      <span class="phone">143</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">Bibilhin</span>
+      <span class="headline">Old Newspapers and Bottles</span>
+      <span class="body">Per kilo may price. Drop off sa junk shop malapit sa simbahan, Sundays lang open.</span>
+    </div>
+
+    <div class="ad large shout">
+      <span class="cat">Anunsyo</span>
+      <span class="headline">Basketball League — Registration Open Na!</span>
+      <span class="body">Sign up na sa barangay hall. Free jersey for the first 20 teams na magrerehistro. 'Wag mahuli!</span>
+    </div>
+
+    <div class="ad small italic-body">
+      <span class="cat">Paupahan</span>
+      <span class="headline">Room for Rent</span>
+      <span class="body">Malapit sa terminal, may sariling C.R. Quiet neighborhood, bawal maingay. ₱3,000 a month lang.</span>
+      <span class="phone">728</span>
+    </div>
+
+    <div class="ad medium noborder">
+      <span class="cat">Found</span>
+      <span class="headline">May Nakitang Wallet</span>
+      <span class="body">Black, may ID pero blurry na yung photo (parang matagal na sa wallet, lol). Claim sa barangay hall, bring proof na sa'yo talaga 'to.</span>
+    </div>
+
+    <div class="ad large thick centered">
+      <span class="cat">Legal na Paunawa</span>
+      <span class="headline">Official Pangalan Change</span>
+      <span class="body">Ipinapaalam sa lahat na ang pusa ni Mang Kiko, dating "Whiskers," ay opisyal na magiging "Sir Fluffington III, Esq." Walang pwedeng kumontra pero baka gusto niyo lang malaman.</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Guitar, Down to 5 Strings</span>
+      <span class="body">Dapat 6 strings pero sounds okay pa rin naman. Perfect for beginners na ayaw pang sumeryoso. ₱800, nego.</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">House Helper Needed (Part-Time)</span>
+      <span class="body">Twice a week lang, laundry and cleaning. Malapit sa palengke, may pamasahe.</span>
+      <span class="phone">9042</span>
+    </div>
+
+    <div class="ad small mono">
+      <span class="cat">Hanap-Kasama</span>
+      <span class="headline">Wanted: Videoke Buddy</span>
+      <span class="body">Need ng backup singer na hindi parang kalabaw pag kumanta. Every Friday night, tabi ng kanto lang. Free pulutan sa first round.</span>
+    </div>
+
+    <div class="ad large dashed centered">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Love Letter Writer</span>
+      <span class="body">Kulang sa lyrics ang puso mo? We got you. Guaranteed kilig or your money back.</span>
+      <span class="phone">156</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Stamp Collection</span>
+      <span class="body">From the '80s pa, may ilan pang galing abroad. Para sa collectors lang, hindi pang-sulat 'to ha.</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Sari-Sari Store Help</span>
+      <span class="body">Part-time, weekends lang. Marunong magbilang ng sukli at hindi antok-antok sa duty.</span>
+      <span class="phone">6673</span>
+    </div>
+
+    <div class="ad small dashed italic-body">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Pen Refill/Exchange</span>
+      <span class="body">May tuyot na ballpen ka? I-exchange namin ng gumagana, free ang first three.</span>
+    </div>
+
+    <div class="ad medium">
+      <span class="cat">Hanap-Kasama</span>
+      <span class="headline">Karaoke Contest Hype Man</span>
+      <span class="body">Kailangan ng taong malakas sumigaw ng "Uli! Uli!" kapag may gustong i-encore. Free snacks habang naghihintay ng turn mo.</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Kuwintas na Gawa sa Kabibe</span>
+      <span class="body">Handmade, souvenir pa from Palawan trip namin last year. Cute pang gift idea. ₱150 each.</span>
+    </div>
+
+    <div class="ad medium mono">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Manok Cleaning Before Cooking</span>
+      <span class="body">Para sa mga super busy, we clean and prep your manok for you. Same-day service available.</span>
+      <span class="phone">2901</span>
+    </div>
+
+    <div class="ad small italic-body">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Extra Hands Needed sa Fiesta</span>
+      <span class="body">Kailangan ng katulong sa kusina every fiesta season. Malaking tulong sa lutuan, may extra pay pag mabilis magtrabaho.</span>
+    </div>
+
+    <div class="ad medium">
+      <span class="cat">For Sale</span>
+      <span class="headline">Fighting Cock Accessories, Buy 2 Take 1</span>
+      <span class="body">Spurs, gaffs, at leg bands — mostly barely used na lang. Sayang kung di magagamit, kaya sale na lang.</span>
+      <span class="phone">4471</span>
+    </div>
+
+    <div class="ad small dashed sans">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Tuli Services, Summer Special</span>
+      <span class="body">Bulk booking pa, may discount para sa mga magkakapatid. First come, first serve lang.</span>
+      <span class="phone">2288</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Ice Cream Vendor Needed</span>
+      <span class="body">May sariling bell required, energetic lang dapat ang boses. Commission-based, malaking kita tuwing summer.</span>
+      <span class="phone">5019</span>
+    </div>
+
+    <div class="ad medium italic-body">
+      <span class="cat">Bibilhin</span>
+      <span class="headline">Sirang Appliances</span>
+      <span class="body">Kahit ilang taon na sira, okay lang — kailangan lang namin ng spare parts. Dalhin na lang sa bahay namin, malapit sa waiting shed.</span>
+    </div>
+
+    <div class="ad small sans">
+      <span class="cat">Hanap-Kasama</span>
+      <span class="headline">Katropa sa Sabong Betting</span>
+      <span class="body">Marunong magbasa ng odds, di nadadala sa emosyon. Tanungin na lang sa cockpit tuwing Linggo.</span>
+    </div>
+
+    <div class="ad small dashed">
+      <span class="cat">Legal na Paunawa</span>
+      <span class="headline">Nawalang Selyo ng Barangay</span>
+      <span class="body">Kung sino man ang nakahawak niyan, please ibalik na lang bago pa kami ma-audit. Hindi biro 'yung papeles na kailangan ulit i-stamp.</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ PAGE 2 ============ -->
+<div class="page">
+  <div class="masthead">
+    <h1>ANG DAILY CHISMIS</h1>
+    <div class="tagline">"Balita, Bentahan, at Bulungan — Dahil Alam Namin ang Lahat"</div>
+    <div class="meta-row">
+      <span>Blg. 247 &middot; Taon 12</span>
+      <span>Oktubre 2026</span>
+      <span>Presyo: ₱15.00</span>
+    </div>
+  </div>
+  <div class="section-title">Klasipikados (Patuloy)</div>
+  <div class="page-continued">— sumunod mula pahina 1 —</div>
+
+  <div class="classifieds">
+
+    <div class="ad medium">
+      <span class="cat">For Sale</span>
+      <span class="headline">Traysikel, Konting Ayos Na Lang</span>
+      <span class="body">Ready for business agad, may konting scratch lang sa gilid. Engine's still strong naman. ₱35,000, nego.</span>
+      <span class="phone">4418</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">For Sale — Antique</span>
+      <span class="headline">Old Radio, Still Works!</span>
+      <span class="body">Vintage radio from lolo's time. May weird connection pa rin daw sa old lines — minsan may naririnig kang kakaiba pag tumawag ka rito, kung totoo nga 'yun. ₱500 nego lang.</span>
+      <span class="phone">4627</span>
+    </div>
+
+    <div class="ad small sans">
+      <span class="cat">Turo</span>
+      <span class="headline">Math Tutor for High School</span>
+      <span class="body">Patient and kind, malapit lang sa subdivision. Rate per hour, pwede pa i-negotiate depende sa dami ng lessons.</span>
+    </div>
+
+    <div class="ad large mono centered">
+      <span class="cat">Nasagap Lang</span>
+      <span class="headline">Missed Connection</span>
+      <span class="body">Ikaw na naka-white sa jeep papuntang palengke, ako 'yung nahulog ang payong sa tapat mo. Sorry sa awkward eye contact. If you're reading this... you know na.</span>
+    </div>
+
+    <div class="ad large thick centered">
+      <span class="cat">Serbisyo &mdash; Hotline</span>
+      <span class="headline">Emergency Hotline</span>
+      <span class="body">Hindi ito ordinary hotline. May katotohanang naghihintay sa kabilang linya. Tumawag na bago mahuli.</span>
+      <span class="phone">911</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Basketball Coach Needed</span>
+      <span class="body">Barangay league lang, weekends. Coaching experience is a plus pero hindi naman required.</span>
+    </div>
+
+    <div class="ad small italic-body">
+      <span class="cat">Anunsyo — Tindahan</span>
+      <span class="headline">Last Call Na!</span>
+      <span class="body">Bago kami magsara ngayong gabi, may isa pang bagay na dapat n'yong malaman. Tumawag bago mag-alas-dose.</span>
+      <span class="phone">9999</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Sari-Sari Store Items, Ongoing</span>
+      <span class="body">Bulk lang ang benta — instant noodles, sardinas, at tabo. Price depende sa dami, usapan na lang.</span>
+    </div>
+
+    <div class="ad large shout centered">
+      <span class="cat">Horoscope Corner</span>
+      <span class="headline">This Week's Reading</span>
+      <span class="body">Sagittarius: Malaking desisyon paparating, pero baka mali ang timing. Cancer: May tatawag sa'yo — or baka ikaw ang tatawag. Libra: Don't forget the deadline.</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Retired Carabao Too</span>
+      <span class="body">Smart, sanay sa trabaho sa bukid, pero ready na mag-relax. Manual for care included sa bili.</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Teleserye Watcher Needed</span>
+      <span class="body">Hire ka namin para panoorin ang teleserye for us tapos i-summarize mo yung plot the next day. Kailangan magaling mag-remember ng plot twists.</span>
+    </div>
+
+    <div class="ad large dashed thick">
+      <span class="cat">Legal na Paunawa</span>
+      <span class="headline">Missing Tsinelas</span>
+      <span class="body">One lang, blue, size 9. Kung may nakita, alam mo naman kung kanino 'to. Actually, 'wag na lang ibalik, bibili na lang ako ng bago.</span>
+    </div>
+
+    <div class="ad medium italic-body">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Pet Sitting</span>
+      <span class="body">Aalagaan namin ang pet mo habang wala ka. Dogs, cats, kahit fish — pro na kami dito.</span>
+      <span class="phone">815</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Trunk Full of Memories (and Stuff)</span>
+      <span class="body">Hindi pa nabuksan since we moved here. Baka may treasure, baka basura lang talaga. ₱200 flat, as-is.</span>
+    </div>
+
+    <div class="ad medium dashed sans">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">House Painter</span>
+      <span class="body">Pati pader ng kapitbahay pwede rin kung gusto niyo, sabay na lang. May discount kung dalawang bahay sabay.</span>
+      <span class="phone">3350</span>
+    </div>
+
+    <div class="ad small italic-body">
+      <span class="cat">Lost</span>
+      <span class="headline">Handkerchief na May Sulat na "Ingat Ka Lagi"</span>
+      <span class="body">Gift 'to galing sa lola ko, siguro nahulog sa palengke. Sentimental value lang naman, walang reward, sorry.</span>
+    </div>
+
+    <div class="ad medium">
+      <span class="cat">Hanap-Kasama</span>
+      <span class="headline">Tomato Farming Buddy</span>
+      <span class="body">Morning lang, bago talaga sumikat ang araw. Marunong mag-water ng tanim at hindi natatakot sa uod.</span>
+      <span class="phone">7726</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">For Sale</span>
+      <span class="headline">Bike, Walang Preno</span>
+      <span class="body">Solid pa naman ang frame, kailangan lang ng bagong brakes. Perfect project bike. ₱1,200.</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Home Service Haircut</span>
+      <span class="body">Bahay-bahay kami, walang pila. Rate depende kung fade or regular trim lang.</span>
+      <span class="phone">990</span>
+    </div>
+
+    <div class="ad small italic-body">
+      <span class="cat">Hanap-Kasama</span>
+      <span class="headline">Dog Walking Buddy</span>
+      <span class="body">Afternoon walks lang, kasama ang aso namin na si Chikoy. Super friendly naman siya, promise.</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">For Sale</span>
+      <span class="headline">Kalan, Gumagana Pero May Konting Amoy Gas</span>
+      <span class="body">Baka connection lang, di pa namin na-check. Functional naman as-is, buyer's discretion na lang.</span>
+      <span class="phone">3067</span>
+    </div>
+
+    <div class="ad small dashed">
+      <span class="cat">Serbisyo</span>
+      <span class="headline">Aircon Cleaning, Bago ang Tag-init</span>
+      <span class="body">Book na agad bago mag-peak season. Same-day service kung malapit lang sa area namin.</span>
+      <span class="phone">8845</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">Hanap-Trabaho</span>
+      <span class="headline">Manininda ng Taho Tuwing Umaga</span>
+      <span class="body">Alas-singko ng umaga simula, tapos na by 9am. Kailangan lang malakas maglakad at mahusay magsigaw ng "Tahooo!"</span>
+      <span class="phone">174</span>
+    </div>
+
+    <div class="ad medium italic-body">
+      <span class="cat">Hanap-Kasama</span>
+      <span class="headline">Katuwang sa Pag-aalaga ng Manok</span>
+      <span class="body">Umaga at gabi lang, feeding at cleaning ng kulungan. Kailangan hindi natatakot sa manok na medyo maldita.</span>
+    </div>
+
+    <div class="ad small">
+      <span class="cat">Lost</span>
+      <span class="headline">Nawalang Susi ng Bahay</span>
+      <span class="body">May keychain na maliit na basketball. Kung may nakakita, akin talaga 'yan please, wala kaming ibang extra key.</span>
+    </div>
+
+    <div class="ad medium sans">
+      <span class="cat">Anunsyo</span>
+      <span class="headline">Zumba Class Every Wednesday</span>
+      <span class="body">Sa covered court, 6pm start. Libre ang unang session, bring your own tubig na lang.</span>
+    </div>
+
+  </div>
+
+  <div class="disclaimer">
+    Ang mga patalastas dito ay hindi opisyal na garantiya ng tagapaglathala. Kung sakaling may masamang mangyari matapos sundin ang alinman sa mga sumusunod, huwag kaming sisihin. &mdash; Ang Patnugot
+  </div>
+</div>
+
+</body>
+</html>

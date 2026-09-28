@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cure Line</title>
+<style>
+  :root {
+    --bezel: #17181c;
+    --screen-bg: #0d0f14;
+    --accent: #35d07f;
+    --accent-dim: #1f7a4c;
+    --danger: #e5484d;
+    --text: #f4f6f8;
+    --text-dim: #9aa1ab;
+    --key-bg: #20232b;
+    --key-bg-active: #2c3039;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(circle at 50% 20%, #2a2d38, #0a0b0f 70%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .phone-frame {
+    width: min(92vw, 360px);
+    height: min(94vh, 720px);
+    background: var(--bezel);
+    border-radius: 46px;
+    padding: 14px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 2px #2b2e37;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen {
+    flex: 1;
+    background: var(--screen-bg);
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 22px 4px;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .calls-indicator {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--accent);
+    background: rgba(53,208,127,0.1);
+    border: 1px solid rgba(53,208,127,0.3);
+    border-radius: 20px;
+    margin: 6px 20px 0;
+    padding: 5px 10px;
+  }
+  .calls-indicator.depleted {
+    color: var(--danger);
+    background: rgba(229,72,77,0.1);
+    border-color: rgba(229,72,77,0.3);
+  }
+
+  .view { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .view.active { display: flex; }
+
+  /* ---------- Dial view ---------- */
+  #view-dial { padding: 6px 20px 18px; justify-content: space-between; }
+  .display-wrap { text-align: center; padding-top: 18px; min-height: 60px; }
+  .display {
+    font-size: 30px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    min-height: 40px;
+  }
+  .display.placeholder { color: var(--text-dim); font-weight: 400; font-size: 16px; }
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 6px 0;
+  }
+  .key {
+    background: var(--key-bg);
+    border: none;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+  }
+  .key:active { background: var(--key-bg-active); }
+  .key .sub { font-size: 9px; letter-spacing: 1px; color: var(--text-dim); margin-top: 2px; }
+  .dial-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    margin-top: 6px;
+  }
+  .btn-clear {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    width: 56px;
+  }
+  .btn-call {
+    background: var(--accent);
+    border: none;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(53,208,127,0.4);
+  }
+  .btn-call:disabled { background: var(--accent-dim); box-shadow: none; opacity: 0.5; cursor: default; }
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 22px;
+    cursor: pointer;
+    width: 56px;
+  }
+
+  /* ---------- Calling / Result view ---------- */
+  #view-call, #view-result {
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px 26px 28px;
+    text-align: center;
+  }
+  .calling-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  .caller-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #3a3f4b, #1c1e24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  .caller-avatar svg {
+    display: block;
+    width: 40px;
+    height: 40px;
+  }
+  .pulse { animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .calling-name { font-size: 22px; font-weight: 600; }
+  .calling-number { font-size: 14px; color: var(--text-dim); letter-spacing: 1px; margin-top: 2px; }
+  .calling-status { color: var(--text-dim); font-size: 14px; margin-top: 6px; }
+  .call-end-btn {
+    background: var(--danger);
+    border: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+    margin-top: 20px;
+  }
+
+  .result-body { flex: 1; display: flex; flex-direction: column; justify-content: center; width: 100%; }
+  .result-emoji { font-size: 46px; margin-bottom: 10px; }
+  .result-name { font-size: 19px; font-weight: 600; margin-bottom: 2px; }
+  .result-number { color: var(--text-dim); font-size: 13px; margin-bottom: 14px; }
+  .result-text.not-found {
+    background: rgba(255,255,255,0.03);
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .result-text {
+    font-size: 14px;
+    line-height: 1.45;
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin: 0 4px;
+  }
+  .result-text.target {
+    background: rgba(53,208,127,0.12);
+    border: 1px solid rgba(53,208,127,0.35);
+  }
+  clue {
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .cure-note {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .end-call-wide {
+    margin-top: 18px;
+    background: var(--danger);
+    border: none;
+    color: white;
+    padding: 12px 28px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="screen">
+    <div class="status-bar">
+      <span id="clock">9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <div class="calls-indicator" id="calls-indicator">Free Calls: 15/15</div>
+
+    <!-- Dial pad view -->
+    <div id="view-dial" class="view active">
+      <div class="display-wrap">
+        <div id="display" class="display placeholder">Enter Number</div>
+      </div>
+      <div>
+        <div class="keypad" id="keypad"></div>
+        <div class="dial-actions">
+          <button class="btn-back" id="btn-back" aria-label="backspace">⌫</button>
+          <button class="btn-call" id="btn-call" disabled aria-label="call">📞</button>
+          <button class="btn-clear" id="btn-clear">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calling view -->
+    <div id="view-call" class="view">
+      <div></div>
+      <div class="calling-body">
+        <div class="caller-avatar pulse">
+          <svg viewBox="0 0 24 24" fill="#35d07f" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+          </svg>
+        </div>
+        <div class="calling-name" id="calling-name"></div>
+        <div class="calling-number" id="calling-number"></div>
+        <div class="calling-status">Calling...</div>
+      </div>
+      <button class="call-end-btn" id="btn-cancel-call" aria-label="end call">📵</button>
+    </div>
+
+    <!-- Result view -->
+    <div id="view-result" class="view">
+      <div class="result-body">
+        <div class="result-emoji" id="result-emoji">🙂</div>
+        <div class="result-name" id="result-name"></div>
+        <div class="result-number" id="result-number"></div>
+        <div class="result-text" id="result-text"></div>
+      </div>
+      <button class="end-call-wide" id="btn-end-call">End Call</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PHONEBOOK = __PHONEBOOK_JSON__;
+const WRONG_SCRIPTS = __WRONG_SCRIPTS_JSON__;
+const TARGET_SCRIPT = __TARGET_SCRIPT_JSON__;
+const SPECIAL_NUMBERS = __SPECIAL_NUMBERS_JSON__;
+const RESET_CODE = __RESET_CODE_JSON__; // secret GM-only code: resets the free-call counter
+const RING_MIN_MS = __RING_MIN_SECONDS_JSON__ * 1000;
+const RING_MAX_MS = __RING_MAX_SECONDS_JSON__ * 1000;
+
+const phoneMap = {};
+PHONEBOOK.forEach(e => {
+  phoneMap[e.phone] = { name: e.name, role: e.role, scriptIndex: e.scriptIndex, script: e.script };
+});
+
+// Every non-7-digit number that's actually dialable: the 5 real specials,
+// every decoy ad number auto-extracted from classifieds.html, and the
+// secret reset code — anything else short just won't enable the Call button.
+const SHORT_CODES = new Set(
+  Object.keys(phoneMap).filter(p => p.length !== 7).concat([RESET_CODE])
+);
+
+// ---------- Sound effects: real telephone tones, synthesized (no audio files) ----------
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+// Plays two sine tones together (a "dual tone") with a short fade in/out to
+// avoid clicks, starting `delay` seconds from now and lasting `duration`.
+function playDualTone(f1, f2, duration, volume, delay) {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const startTime = ctx.currentTime + (delay || 0);
+    const fade = Math.min(0.01, duration / 4);
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + fade);
+    gain.gain.setValueAtTime(volume, startTime + duration - fade);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    [f1, f2].forEach(freq => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  } catch (e) {}
+}
+
+// Standard DTMF (touch-tone) frequency pairs — the actual tones real phone
+// keypads use per digit.
+const DTMF_FREQ = {
+  "1": [697, 1209], "2": [697, 1336], "3": [697, 1477],
+  "4": [770, 1209], "5": [770, 1336], "6": [770, 1477],
+  "7": [852, 1209], "8": [852, 1336], "9": [852, 1477],
+  "*": [941, 1209], "0": [941, 1336], "#": [941, 1477],
+};
+
+function playKeyClick(digit) {
+  const [f1, f2] = DTMF_FREQ[digit] || DTMF_FREQ["#"];
+  playDualTone(f1, f2, 0.09, 0.06, 0);
+}
+
+// Real telephone "reorder"/fast-busy tone (480Hz + 620Hz, 0.25s on/off) —
+// what a real phone plays for an invalid or disconnected number.
+function playUnknownTone() {
+  const pulse = 0.25;
+  for (let i = 0; i < 4; i++) {
+    playDualTone(480, 620, pulse, 0.07, i * pulse * 2);
+  }
+}
+
+// Real North American ringback tone (440Hz + 480Hz), standard 2s-on/4s-off
+// cadence — vibrates in sync with each "on" burst.
+const RING_ON_MS = 2000;
+const RING_OFF_MS = 4000;
+let ringing = false;
+let ringTimerId = null;
+
+function ringPulse() {
+  if (!ringing) return;
+  playDualTone(440, 480, RING_ON_MS / 1000, 0.05, 0);
+  if (navigator.vibrate) navigator.vibrate(RING_ON_MS);
+  ringTimerId = setTimeout(() => {
+    if (!ringing) return;
+    ringTimerId = setTimeout(ringPulse, RING_OFF_MS);
+  }, RING_ON_MS);
+}
+
+function startRinging() {
+  stopRinging();
+  ringing = true;
+  ringPulse();
+}
+function stopRinging() {
+  ringing = false;
+  if (ringTimerId) {
+    clearTimeout(ringTimerId);
+    ringTimerId = null;
+  }
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+function randomRingDuration() {
+  return RING_MIN_MS + Math.random() * (RING_MAX_MS - RING_MIN_MS);
+}
+
+// ---------- Free-call rate limiter (persisted in localStorage) ----------
+const MAX_FREE_CALLS = __MAX_FREE_CALLS_JSON__;
+const CALL_COOLDOWN_MS = __COOLDOWN_MINUTES_JSON__ * 60 * 1000;
+const CALLS_STORAGE_KEY = "cureline_call_limiter";
+
+function loadCallState() {
+  try {
+    const raw = localStorage.getItem(CALLS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.remaining === "number") return parsed;
+    }
+  } catch (e) {}
+  return { remaining: MAX_FREE_CALLS, exhaustedAt: null };
+}
+
+function saveCallState(state) {
+  try {
+    localStorage.setItem(CALLS_STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+let callState = loadCallState();
+
+function refreshCallState() {
+  if (callState.remaining <= 0 && callState.exhaustedAt) {
+    const elapsed = Date.now() - callState.exhaustedAt;
+    if (elapsed >= CALL_COOLDOWN_MS) {
+      callState = { remaining: MAX_FREE_CALLS, exhaustedAt: null };
+      saveCallState(callState);
+    }
+  }
+}
+
+const callsIndicatorEl = document.getElementById("calls-indicator");
+
+function renderCallsIndicator() {
+  refreshCallState();
+  if (callState.remaining > 0) {
+    callsIndicatorEl.textContent = `Free Calls: ${callState.remaining}/${MAX_FREE_CALLS}`;
+    callsIndicatorEl.classList.remove("depleted");
+  } else {
+    const remainingMs = Math.max(0, CALL_COOLDOWN_MS - (Date.now() - callState.exhaustedAt));
+    const mins = Math.floor(remainingMs / 60000);
+    const secs = Math.floor((remainingMs % 60000) / 1000);
+    callsIndicatorEl.textContent = `Free Calls: 0/${MAX_FREE_CALLS} — resets in ${mins}:${String(secs).padStart(2, "0")}`;
+    callsIndicatorEl.classList.add("depleted");
+  }
+  renderDisplay();
+}
+
+const KEY_LABELS = [
+  ["1", ""], ["2", "ABC"], ["3", "DEF"],
+  ["4", "GHI"], ["5", "JKL"], ["6", "MNO"],
+  ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"],
+  ["", ""], ["0", "+"], ["", ""]
+];
+
+const keypadEl = document.getElementById("keypad");
+KEY_LABELS.forEach(([num, sub]) => {
+  const btn = document.createElement("button");
+  btn.className = "key";
+  if (!num) { btn.style.visibility = "hidden"; btn.disabled = true; }
+  else {
+    btn.innerHTML = num + (sub ? `<span class="sub">${sub}</span>` : "");
+    btn.addEventListener("click", () => addDigit(num));
+  }
+  keypadEl.appendChild(btn);
+});
+
+let digits = "";
+
+const displayEl = document.getElementById("display");
+const callBtn = document.getElementById("btn-call");
+
+function formatDigits(d) {
+  if (SHORT_CODES.has(d)) return d;
+  if (d.length <= 3) return d;
+  return d.slice(0, 3) + "-" + d.slice(3);
+}
+
+function renderDisplay() {
+  refreshCallState();
+  if (digits.length === 0) {
+    displayEl.textContent = "Enter Number";
+    displayEl.classList.add("placeholder");
+  } else {
+    displayEl.textContent = formatDigits(digits);
+    displayEl.classList.remove("placeholder");
+  }
+  const validNumber = digits.length === 7 || SHORT_CODES.has(digits);
+  const rateLimited = callState.remaining <= 0 && digits !== RESET_CODE;
+  callBtn.disabled = !validNumber || rateLimited;
+}
+
+function addDigit(d) {
+  if (digits.length >= 7) return;
+  playKeyClick(d);
+  digits += d;
+  renderDisplay();
+}
+
+document.getElementById("btn-back").addEventListener("click", () => {
+  playKeyClick();
+  digits = digits.slice(0, -1);
+  renderDisplay();
+});
+document.getElementById("btn-clear").addEventListener("click", () => {
+  playKeyClick();
+  digits = "";
+  renderDisplay();
+});
+
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+let callTimer = null;
+
+callBtn.addEventListener("click", () => {
+  refreshCallState();
+  const isReset = digits === RESET_CODE;
+  if (!(digits.length === 7 || SHORT_CODES.has(digits))) return;
+  if (!isReset && callState.remaining <= 0) return;
+
+  if (!isReset) {
+    callState.remaining -= 1;
+    if (callState.remaining <= 0) {
+      callState.remaining = 0;
+      callState.exhaustedAt = Date.now();
+    }
+    saveCallState(callState);
+    renderCallsIndicator();
+  }
+
+  const formatted = formatDigits(digits);
+  const match = isReset ? null : phoneMap[formatted];
+  document.getElementById("calling-name").textContent = isReset ? "" : (match && match.name ? match.name : "Unknown");
+  document.getElementById("calling-number").textContent = formatted;
+  showView("view-call");
+  startRinging();
+  callTimer = setTimeout(() => resolveCall(formatted, match, isReset), randomRingDuration());
+});
+
+document.getElementById("btn-cancel-call").addEventListener("click", () => {
+  clearTimeout(callTimer);
+  stopRinging();
+  resetToDial();
+});
+
+function resolveCall(formatted, match, isReset) {
+  stopRinging();
+  document.getElementById("result-number").textContent = formatted;
+  const nameEl = document.getElementById("result-name");
+  const textEl = document.getElementById("result-text");
+  const emojiEl = document.getElementById("result-emoji");
+  textEl.classList.remove("target", "not-found");
+
+  if (isReset) {
+    callState = { remaining: MAX_FREE_CALLS, exhaustedAt: null };
+    saveCallState(callState);
+    renderCallsIndicator();
+    nameEl.textContent = "";
+    emojiEl.textContent = "🔓";
+    textEl.textContent = `System reset. Free calls restored to ${MAX_FREE_CALLS}/${MAX_FREE_CALLS}.`;
+  } else if (!match) {
+    playUnknownTone();
+    nameEl.textContent = "";
+    emojiEl.textContent = "🚫";
+    textEl.classList.add("not-found");
+    textEl.textContent = "Number does not exist.";
+  } else {
+    nameEl.textContent = match.name || "";
+    if (match.role === "target") {
+      emojiEl.textContent = "🎉";
+      textEl.classList.add("target");
+      textEl.innerHTML = TARGET_SCRIPT;
+    } else if (match.role === "clue") {
+      emojiEl.textContent = "🔎";
+      textEl.innerHTML = match.script;
+    } else if (match.role === "special") {
+      emojiEl.textContent = "☎️";
+      textEl.innerHTML = match.script;
+    } else if (match.role === "decoy") {
+      emojiEl.textContent = "📻";
+      textEl.textContent = match.script;
+    } else {
+      const [emoji, text] = WRONG_SCRIPTS[match.scriptIndex];
+      emojiEl.textContent = emoji;
+      textEl.textContent = text;
+    }
+  }
+  showView("view-result");
+}
+
+document.getElementById("btn-end-call").addEventListener("click", resetToDial);
+
+function resetToDial() {
+  digits = "";
+  renderDisplay();
+  showView("view-dial");
+}
+
+renderCallsIndicator();
+setInterval(renderCallsIndicator, 1000);
+
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2, "0");
+  document.getElementById("clock").textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 30000);
+</script>
+</body>
+</html>

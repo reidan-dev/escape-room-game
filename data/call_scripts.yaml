@@ -1,0 +1,43 @@
+# Game-master-authored scripts for special phonebook roles.
+# Fill in the `script` field for each entry below — these are shown verbatim
+# when a player dials that number in call_simulator.html.
+#
+# `clues`: the 5 people (role: clue in phonebook.csv/yaml) who give out a
+#          clue when called. `phone` and `name` are fixed to match the
+#          randomly-assigned clue persons — do not change them, only `script`.
+# `special`: the hotline-style numbers (role: special, no name). Add/remove
+#            entries here to match whatever special numbers exist in
+#            phonebook.csv — each needs a matching `phone` + `script`.
+#
+# Note: none of the clue/special numbers are part of the main elimination
+# game (filter_phonebook.py / .ipynb only use role "none"/"target" rows) —
+# they exist purely as clue sources reachable through call_simulator.html.
+
+clues:
+  - phone: "982-6652"
+    name: "Christian Malig"
+    script: "Ay, wrong number! Pero I heard something kanina... <clue>hindi naman 3 letters yung first name niya</clue>, hindi siya kasing-short ng 'Ana' o 'Ivy', promise."
+  - phone: "543-6751"
+    name: "Eufrocina Gabriel"
+    script: "Oops, wrong person 'to! But since nandito ka na, here's a freebie: <clue>5 letters or more yung last name niya</clue>, di siya ka-level ng 'Uy' o 'Sy', mas mahaba pa!"
+  - phone: "108-2693"
+    name: "Diwata Damasco"
+    script: "Not me, sorry! Pero FYI, <clue>may letrang A sa first name niya</clue>, parang 'Maria' o 'Angela', ang dami talagang A."
+  - phone: "030-4478"
+    name: "Raffy Lansang"
+    script: "Huh? Wrong number ka, bes. Konting clue na lang: <clue>mas mahaba ang first name niya kaysa sa last name</clue>, parang 'Christopher Uy'."
+  - phone: "647-4402"
+    name: "Esperanza Samonte"
+    script: "Not the person you're looking for, pero I know a little something...<clue>may at least isang letter na pareho sa first and last name niya, kahit isang letra lang</clue>, gaya ng 'Leo Lopez' na parehong may 'L'."
+
+special:
+  - phone: "8080"
+    script: "☎️ You've reached the special line. Here's your clue: <clue>nagsisimula sa consonant yung first name niya</clue>, think 'Bogart', not 'Ana'."
+  - phone: "911"
+    script: "🚨 Emergency line 'to, but don't worry, walang crisis dito. Clue: <clue>hindi nag-eend sa vowel yung last name niya</clue>, edi hindi siya 'Garcia' o 'Mendoza'."
+  - phone: "4627"
+    script: "📡 ...static... connection established. Clue: <clue>hindi nagsisimula sa parehong letra yung first and last name niya</clue>. Peter Parker? Wrong guess, di pwede dito."
+  - phone: "143"
+    script: "💌 143 — I love you, they say. Pero mas importante 'tong clue na 'to: <clue>same number of vowels yung first and last name niya</clue> parang 'Mia Santos', 2 and 2, balanced love."
+  - phone: "9999"
+    script: "🔔 Listen closely: <clue>exactly two letters lang ang pareho sa first and last name niya, and same order sila lumalabas</clue> parang yung 'CR' sa 'CaRla CRuz', dalawang letra lang, magkasunod pa. Pero mali ang 'JuAN NAtividad'"

@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phonebook Directory</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #111;
+    margin: 0;
+  }
+  .sheet {
+    width: 297mm;
+    height: 210mm;
+    display: flex;
+    page-break-after: always;
+  }
+  .sheet:last-child { page-break-after: auto; }
+  .panel {
+    width: 148.5mm;
+    height: 210mm;
+    padding: 12.5mm;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel:first-child { border-right: 1px dashed #999; }
+  .panel-head {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+  }
+  .panel-head h1 {
+    font-size: 24px;
+    letter-spacing: 1.5px;
+    margin: 0;
+  }
+  .panel-head .sub {
+    font-size: 10px;
+    font-style: italic;
+    color: #444;
+    margin-top: 3px;
+  }
+  .panel-head.small {
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding-bottom: 4px;
+  }
+  .panel-head.small .cont {
+    font-weight: normal;
+    font-style: italic;
+    font-size: 11px;
+    color: #444;
+  }
+  .directory {
+    column-count: 3;
+    column-gap: 5mm;
+    column-fill: auto;
+    column-rule: 1px solid #ccc;
+    font-size: 9px;
+    line-height: 1.35;
+    height: 166mm;
+  }
+  .section-start { break-inside: avoid; }
+  .letter-header {
+    break-after: avoid;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 11.5px;
+    letter-spacing: 1px;
+    text-align: center;
+    margin: 7px 0 3px;
+    color: #000;
+  }
+  .letter-header.cont {
+    font-weight: bold;
+    font-size: 10px;
+    text-align: left;
+    color: #333;
+    border-top: 1px solid #999;
+    padding-top: 3px;
+    margin: 6px 0 3px;
+  }
+  .letter-header.cont .cont-tag {
+    font-weight: normal;
+    font-style: italic;
+    font-size: 8.5px;
+    color: #666;
+  }
+  .entry {
+    break-inside: avoid;
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .entry .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .entry .leader {
+    flex: 1;
+    border-bottom: 1px dotted #999;
+    margin: 0 4px 2px;
+    min-width: 4px;
+  }
+  .entry .num {
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .page-num {
+    position: absolute;
+    bottom: 8.5mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9px;
+    color: #555;
+  }
+  .margin-note {
+    position: absolute;
+    top: 8mm;
+    right: 10mm;
+    font-family: 'Bradley Hand', 'Noteworthy', 'Comic Sans MS', cursive;
+    font-size: 15px;
+    color: #b3261e;
+    transform: rotate(-7deg);
+    pointer-events: none;
+  }
+
+  /* ---------- Clue-number annotations: "someone already flagged this" ---------- */
+  .entry.flagged {
+    position: relative;
+    overflow: visible;
+  }
+  .flag-wrap {
+    position: relative;
+    display: block;
+  }
+  .hl-name {
+    background: rgba(255, 224, 71, 0.62);
+    box-shadow: 2px 0 0 rgba(255, 224, 71, 0.62), -2px 0 0 rgba(255, 224, 71, 0.62);
+    border-radius: 1px;
+  }
+  .hw {
+    font-family: 'Bradley Hand', 'Noteworthy', 'Comic Sans MS', cursive;
+    color: #b3261e;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 3px);
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .mark-asterisk {
+    font-size: 17px;
+    transform: translateY(-65%) rotate(-8deg);
+  }
+  .mark-question {
+    font-size: 14px;
+    transform: translateY(-60%) rotate(6deg);
+  }
+  .mark-check {
+    font-size: 10px;
+    transform: translateY(-50%) rotate(-4deg);
+    text-decoration: underline;
+    text-decoration-style: wavy;
+  }
+  .stain svg, .ink-circle svg { display: block; overflow: visible; }
+  .stain {
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    transform: translateY(-50%) rotate(-4deg);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .stain ellipse {
+    fill: none;
+    stroke: #8a5a2b;
+    stroke-width: 1.6;
+    opacity: 0.4;
+  }
+  .ink-circle {
+    position: absolute;
+    left: -6px;
+    right: -10px;
+    top: 50%;
+    width: calc(100% + 16px);
+    height: 24px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .ink-circle path {
+    fill: none;
+    stroke: #1d3f8f;
+    stroke-width: 1.4;
+    opacity: 0.75;
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+  <div class="panel">
+    <div class="panel-head"><h1>PHONEBOOK DIRECTORY</h1><div class="sub">Lastname, Firstname &mdash; Phone Number</div></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; A &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Abad, Dakila</span><span class="leader"></span><span class="num">218-7812</span></div></div>
+      <div class="entry"><span class="name">Abad, Rochelle</span><span class="leader"></span><span class="num">629-5780</span></div>
+      <div class="entry"><span class="name">Abad, Sherilyn</span><span class="leader"></span><span class="num">339-3300</span></div>
+      <div class="entry"><span class="name">Abad, Ysabel</span><span class="leader"></span><span class="num">673-8889</span></div>
+      <div class="entry"><span class="name">Abella, Josefa</span><span class="leader"></span><span class="num">289-4891</span></div>
+      <div class="entry"><span class="name">Abrigo, Cristina</span><span class="leader"></span><span class="num">965-5050</span></div>
+      <div class="entry"><span class="name">Agbayani, Bayani</span><span class="leader"></span><span class="num">422-2252</span></div>
+      <div class="entry"><span class="name">Agbayani, Bing</span><span class="leader"></span><span class="num">209-4938</span></div>
+      <div class="entry"><span class="name">Agbayani, Junjun</span><span class="leader"></span><span class="num">777-2615</span></div>
+      <div class="entry"><span class="name">Aguilar, Rovilson</span><span class="leader"></span><span class="num">377-3287</span></div>
+      <div class="entry"><span class="name">Agustin, Divine</span><span class="leader"></span><span class="num">100-4239</span></div>
+      <div class="entry"><span class="name">Alcantara, Drexler</span><span class="leader"></span><span class="num">724-2248</span></div>
+      <div class="entry"><span class="name">Alcantara, Renz</span><span class="leader"></span><span class="num">017-8673</span></div>
+      <div class="entry"><span class="name">Alejandro, Carmen</span><span class="leader"></span><span class="num">268-3534</span></div>
+      <div class="entry"><span class="name">Alejandro, Elton</span><span class="leader"></span><span class="num">366-3898</span></div>
+      <div class="entry"><span class="name">Alejandro, Leizel</span><span class="leader"></span><span class="num">725-8751</span></div>
+      <div class="entry"><span class="name">Alejandro, Leni</span><span class="leader"></span><span class="num">216-3113</span></div>
+      <div class="entry"><span class="name">Alejandro, Queenie</span><span class="leader"></span><span class="num">270-8791</span></div>
+      <div class="entry"><span class="name">Almario, Mabel</span><span class="leader"></span><span class="num">178-4347</span></div>
+      <div class="entry"><span class="name">Almario, Rosa</span><span class="leader"></span><span class="num">095-4820</span></div>
+      <div class="entry"><span class="name">Almario, Sergio</span><span class="leader"></span><span class="num">377-5427</span></div>
+      <div class="entry"><span class="name">Almario, Tessie</span><span class="leader"></span><span class="num">006-8719</span></div>
+      <div class="entry"><span class="name">Alonzo, Christian</span><span class="leader"></span><span class="num">262-3533</span></div>
+      <div class="entry"><span class="name">Alonzo, Roel</span><span class="leader"></span><span class="num">470-1275</span></div>
+      <div class="entry"><span class="name">Alonzo, Rustom</span><span class="leader"></span><span class="num">767-8837</span></div>
+      <div class="entry"><span class="name">Alvarez, Ivy</span><span class="leader"></span><span class="num">636-2496</span></div>
+      <div class="entry"><span class="name">Amurao, Donabel</span><span class="leader"></span><span class="num">869-5620</span></div>
+      <div class="entry"><span class="name">Amurao, Vergel</span><span class="leader"></span><span class="num">092-6442</span></div>
+      <div class="entry"><span class="name">Andrada, Dolores</span><span class="leader"></span><span class="num">759-4506</span></div>
+      <div class="entry"><span class="name">Andrada, Jerico</span><span class="leader"></span><span class="num">675-3164</span></div>
+      <div class="entry"><span class="name">Andrada, Reyland</span><span class="leader"></span><span class="num">183-5442</span></div>
+      <div class="entry"><span class="name">Angara, Donabel</span><span class="leader"></span><span class="num">753-3048</span></div>
+      <div class="entry"><span class="name">Angeles, Edgardo</span><span class="leader"></span><span class="num">996-9975</span></div>
+      <div class="entry"><span class="name">Angeles, Maria</span><span class="leader"></span><span class="num">118-4279</span></div>
+      <div class="entry"><span class="name">Angeles, Queenie</span><span class="leader"></span><span class="num">755-3232</span></div>
+      <div class="entry"><span class="name">Antonio, Arnel</span><span class="leader"></span><span class="num">972-4051</span></div>
+      <div class="entry"><span class="name">Antonio, Dranreb</span><span class="leader"></span><span class="num">343-7034</span></div>
+      <div class="entry"><span class="name">Aquino, Jessa</span><span class="leader"></span><span class="num">824-5168</span></div>
+      <div class="entry"><span class="name">Aquino, Kristine</span><span class="leader"></span><span class="num">237-4720</span></div>
+      <div class="entry"><span class="name">Aquino, Laarni</span><span class="leader"></span><span class="num">460-4305</span></div>
+      <div class="entry"><span class="name">Aranas, Roi</span><span class="leader"></span><span class="num">129-1101</span></div>
+      <div class="entry"><span class="name">Araneta, Gloria</span><span class="leader"></span><span class="num">566-6870</span></div>
+      <div class="entry"><span class="name">Araneta, Vener</span><span class="leader"></span><span class="num">129-8229</span></div>
+      <div class="entry"><span class="name">Arceo, Pablo</span><span class="leader"></span><span class="num">879-7711</span></div>
+      <div class="entry"><span class="name">Arceo, Toto</span><span class="leader"></span><span class="num">092-0920</span></div>
+      <div class="entry"><span class="name">Arriola, Ivy</span><span class="leader"></span><span class="num">323-5080</span></div>
+      <div class="entry"><span class="name">Arriola, Ronnie</span><span class="leader"></span><span class="num">744-5776</span></div>
+      <div class="entry"><span class="name">Asuncion, Elvis</span><span class="leader"></span><span class="num">360-8945</span></div>
+      <div class="entry"><span class="name">Asuncion, Jinky</span><span class="leader"></span><span class="num">411-7191</span></div>
+      <div class="entry"><span class="name">Asuncion, Jose</span><span class="leader"></span><span class="num">747-7527</span></div>
+      <div class="entry"><span class="name">Asuncion, Juliet</span><span class="leader"></span><span class="num">003-5464</span></div>
+      <div class="entry"><span class="name">Asuncion, Rustom</span><span class="leader"></span><span class="num">650-6338</span></div>
+      <div class="entry"><span class="name">Atienza, Antonio</span><span class="leader"></span><span class="num">332-0919</span></div>
+      <div class="entry"><span class="name">Atienza, Christopher</span><span class="leader"></span><span class="num">971-9449</span></div>
+      <div class="entry"><span class="name">Ayala, Vener</span><span class="leader"></span><span class="num">995-5642</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; B &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Bagayas, Andres</span><span class="leader"></span><span class="num">805-5464</span></div></div>
+      <div class="entry"><span class="name">Bagayas, Roxanne</span><span class="leader"></span><span class="num">172-9402</span></div>
+      <div class="entry"><span class="name">Bagayas, Rubylyn</span><span class="leader"></span><span class="num">570-4082</span></div>
+      <div class="entry"><span class="name">Bagsic, Claudine</span><span class="leader"></span><span class="num">159-2579</span></div>
+      <div class="entry"><span class="name">Bagsic, Ranilo</span><span class="leader"></span><span class="num">583-9204</span></div>
+      <div class="entry"><span class="name">Bagsic, Ronald</span><span class="leader"></span><span class="num">208-4375</span></div>
+      <div class="entry"><span class="name">Balagtas, Reymark</span><span class="leader"></span><span class="num">405-8224</span></div>
+      <div class="entry"><span class="name">Balatbat, Nanette</span><span class="leader"></span><span class="num">511-9287</span></div>
+      <div class="entry"><span class="name">Balatbat, Ronnie</span><span class="leader"></span><span class="num">464-2161</span></div>
+      <div class="entry"><span class="name">Baldoza, Florendo</span><span class="leader"></span><span class="num">983-8320</span></div>
+      <div class="entry"><span class="name">Baldoza, Jea</span><span class="leader"></span><span class="num">593-8883</span></div>
+      <div class="entry"><span class="name">Baldoza, Justine</span><span class="leader"></span><span class="num">828-7728</span></div>
+      <div class="entry"><span class="name">Baldoza, Rubylyn</span><span class="leader"></span><span class="num">575-6761</span></div>
+      <div class="entry"><span class="name">Balingit, Arnel</span><span class="leader"></span><span class="num">971-6520</span></div>
+      <div class="entry"><span class="name">Balingit, Jamila</span><span class="leader"></span><span class="num">583-5747</span></div>
+      <div class="entry"><span class="name">Balingit, Mabel</span><span class="leader"></span><span class="num">022-2420</span></div>
+      <div class="entry"><span class="name">Balingit, Odette</span><span class="leader"></span><span class="num">632-7916</span></div>
+      <div class="entry"><span class="name">Baluyot, Dolores</span><span class="leader"></span><span class="num">848-8972</span></div>
+      <div class="entry"><span class="name">Baluyot, Jhoana</span><span class="leader"></span><span class="num">683-1936</span></div>
+      <div class="entry"><span class="name">Baluyot, Ming</span><span class="leader"></span><span class="num">407-4520</span></div>
+      <div class="entry"><span class="name">Baluyot, Shiela</span><span class="leader"></span><span class="num">089-4583</span></div>
+      <div class="entry"><span class="name">Banaag, Donabel</span><span class="leader"></span><span class="num">487-7344</span></div>
+      <div class="entry"><span class="name">Baraquia, Jessa</span><span class="leader"></span><span class="num">927-0514</span></div>
+      <div class="entry"><span class="name">Baraquia, Jewel</span><span class="leader"></span><span class="num">724-2474</span></div>
+      <div class="entry"><span class="name">Baraquia, Luzviminda</span><span class="leader"></span><span class="num">307-0732</span></div>
+      <div class="entry"><span class="name">Baraquia, Milagros</span><span class="leader"></span><span class="num">353-3950</span></div>
+      <div class="entry"><span class="name">Baraquia, Romeo</span><span class="leader"></span><span class="num">480-7245</span></div>
+      <div class="entry"><span class="name">Batac, Bogart</span><span class="leader"></span><span class="num">956-7734</span></div>
+      <div class="entry"><span class="name">Batac, Estelita</span><span class="leader"></span><span class="num">543-9228</span></div>
+      <div class="entry"><span class="name">Batac, Jamila</span><span class="leader"></span><span class="num">849-9080</span></div>
+      <div class="entry"><span class="name">Batungbakal, Esperanza</span><span class="leader"></span><span class="num">061-2718</span></div>
+      <div class="entry"><span class="name">Batungbakal, Maria</span><span class="leader"></span><span class="num">526-3899</span></div>
+      <div class="entry"><span class="name">Bautista, Arnel</span><span class="leader"></span><span class="num">192-9626</span></div>
+      <div class="entry"><span class="name">Bautista, Dennis</span><span class="leader"></span><span class="num">550-3492</span></div>
+      <div class="entry"><span class="name">Bautista, Nesty</span><span class="leader"></span><span class="num">382-6481</span></div>
+      <div class="entry"><span class="name">Bautista, Ronilo</span><span class="leader"></span><span class="num">920-1323</span></div>
+      <div class="entry"><span class="name">Bautista, Ryzza</span><span class="leader"></span><span class="num">017-9623</span></div>
+      <div class="entry"><span class="name">Bayani, Flordeliza</span><span class="leader"></span><span class="num">480-4342</span></div>
+      <div class="entry"><span class="name">Bayani, Jonel</span><span class="leader"></span><span class="num">022-1056</span></div>
+      <div class="entry"><span class="name">Bayani, Rustan</span><span class="leader"></span><span class="num">144-3696</span></div>
+      <div class="entry"><span class="name">Belmonte, Neneng</span><span class="leader"></span><span class="num">939-9243</span></div>
+      <div class="entry"><span class="name">Beltran, Dexter</span><span class="leader"></span><span class="num">335-4843</span></div>
+      <div class="entry"><span class="name">Beltran, Kenneth</span><span class="leader"></span><span class="num">256-3216</span></div>
+      <div class="entry"><span class="name">Beltran, Rigor</span><span class="leader"></span><span class="num">440-9870</span></div>
+      <div class="entry"><span class="name">Bernardo, Ompong</span><span class="leader"></span><span class="num">699-8835</span></div>
+      <div class="entry"><span class="name">Binay, Angelo</span><span class="leader"></span><span class="num">658-7022</span></div>
+      <div class="entry"><span class="name">Bonghanoy, Christian</span><span class="leader"></span><span class="num">749-7962</span></div>
+      <div class="entry"><span class="name">Bonghanoy, Honey</span><span class="leader"></span><span class="num">247-6658</span></div>
+      <div class="entry"><span class="name">Bonghanoy, Leni</span><span class="leader"></span><span class="num">254-1940</span></div>
+      <div class="entry"><span class="name">Bonghanoy, Orland</span><span class="leader"></span><span class="num">790-4839</span></div>
+      <div class="entry"><span class="name">Bonghanoy, Rowel</span><span class="leader"></span><span class="num">594-1565</span></div>
+      <div class="entry"><span class="name">Bonifacio, Jea</span><span class="leader"></span><span class="num">918-1646</span></div>
+      <div class="entry"><span class="name">Bonifacio, Mercy</span><span class="leader"></span><span class="num">449-1923</span></div>
+      <div class="entry"><span class="name">Buenaventura, Neneng</span><span class="leader"></span><span class="num">447-1734</span></div>
+      <div class="entry"><span class="name">Buenavista, Carmen</span><span class="leader"></span><span class="num">851-1398</span></div>
+      <div class="entry"><span class="name">Buenavista, Drexler</span><span class="leader"></span><span class="num">161-4984</span></div>
+      <div class="entry"><span class="name">Buenavista, Ferdie</span><span class="leader"></span><span class="num">728-4066</span></div>
+      <div class="entry"><span class="name">Buenavista, Tintin</span><span class="leader"></span><span class="num">920-8361</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; C &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Cabahug, Amboy</span><span class="leader"></span><span class="num">948-3872</span></div></div>
+      <div class="entry"><span class="name">Cabahug, Apolinario</span><span class="leader"></span><span class="num">223-3811</span></div>
+      <div class="entry"><span class="name">Cabahug, Araw</span><span class="leader"></span><span class="num">415-6213</span></div>
+      <div class="entry"><span class="name">Cabahug, Benigno</span><span class="leader"></span><span class="num">649-6939</span></div>
+      <div class="entry"><span class="name">Cabahug, Noli</span><span class="leader"></span><span class="num">548-3120</span></div>
+      <div class="entry"><span class="name">Cabrera, Jocelyn</span><span class="leader"></span><span class="num">473-1669</span></div>
+      <div class="entry"><span class="name">Cachero, Elmer</span><span class="leader"></span><span class="num">403-6114</span></div>
+      <div class="entry"><span class="name">Cachero, Orland</span><span class="leader"></span><span class="num">367-5635</span></div>
+      <div class="entry"><span class="name">Cadiz, Baby</span><span class="leader"></span><span class="num">641-7529</span></div>
+      <div class="entry"><span class="name">Cadiz, Bimbo</span><span class="leader"></span><span class="num">447-3803</span></div>
+      <div class="entry"><span class="name">Cadiz, Neneng</span><span class="leader"></span><span class="num">702-6018</span></div>
+      <div class="entry"><span class="name">Cadiz, Rodel</span><span class="leader"></span><span class="num">812-1874</span></div>
+    </div>
+    <div class="page-num">1 / 8</div>
+    
+  </div>
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">C <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Cadiz, Rodrigo</span><span class="leader"></span><span class="num">778-1646</span></div></div>
+      <div class="entry"><span class="name">Calderon, Kaye</span><span class="leader"></span><span class="num">852-3180</span></div>
+      <div class="entry"><span class="name">Calderon, Maria</span><span class="leader"></span><span class="num">895-7213</span></div>
+      <div class="entry"><span class="name">Calma, Dexter</span><span class="leader"></span><span class="num">320-6022</span></div>
+      <div class="entry"><span class="name">Calma, Jhoana</span><span class="leader"></span><span class="num">149-4193</span></div>
+      <div class="entry"><span class="name">Calma, Rosanna</span><span class="leader"></span><span class="num">830-5626</span></div>
+      <div class="entry"><span class="name">Calma, Toto</span><span class="leader"></span><span class="num">893-0200</span></div>
+      <div class="entry"><span class="name">Camposano, Liwayway</span><span class="leader"></span><span class="num">210-8680</span></div>
+      <div class="entry"><span class="name">Camposano, Michelle</span><span class="leader"></span><span class="num">591-8313</span></div>
+      <div class="entry"><span class="name">Canonizado, Aldrin</span><span class="leader"></span><span class="num">797-6965</span></div>
+      <div class="entry"><span class="name">Canonizado, Gloria</span><span class="leader"></span><span class="num">940-1578</span></div>
+      <div class="entry"><span class="name">Canonizado, Rowel</span><span class="leader"></span><span class="num">138-4991</span></div>
+      <div class="entry"><span class="name">Capistrano, Arman</span><span class="leader"></span><span class="num">610-7119</span></div>
+      <div class="entry"><span class="name">Capistrano, Claudine</span><span class="leader"></span><span class="num">787-4067</span></div>
+      <div class="entry"><span class="name">Capistrano, Erap</span><span class="leader"></span><span class="num">630-9614</span></div>
+      <div class="entry"><span class="name">Capistrano, Jerico</span><span class="leader"></span><span class="num">358-9113</span></div>
+      <div class="entry"><span class="name">Carbonell, Bonifacio</span><span class="leader"></span><span class="num">856-8189</span></div>
+      <div class="entry"><span class="name">Carbonell, Esperanza</span><span class="leader"></span><span class="num">866-8622</span></div>
+      <div class="entry"><span class="name">Carbonell, Ricardo</span><span class="leader"></span><span class="num">794-4720</span></div>
+      <div class="entry"><span class="name">Cariaga, Allan</span><span class="leader"></span><span class="num">077-2442</span></div>
+      <div class="entry"><span class="name">Cariaga, Ana</span><span class="leader"></span><span class="num">951-5947</span></div>
+      <div class="entry"><span class="name">Cariaga, Wilma</span><span class="leader"></span><span class="num">586-1871</span></div>
+      <div class="entry"><span class="name">Carino, Jerome</span><span class="leader"></span><span class="num">472-1924</span></div>
+      <div class="entry"><span class="name">Carino, Kimberly</span><span class="leader"></span><span class="num">414-0341</span></div>
+      <div class="entry"><span class="name">Carino, Noel</span><span class="leader"></span><span class="num">780-4564</span></div>
+      <div class="entry"><span class="name">Carino, Yolanda</span><span class="leader"></span><span class="num">353-7043</span></div>
+      <div class="entry"><span class="name">Casimiro, Jose</span><span class="leader"></span><span class="num">911-1753</span></div>
+      <div class="entry"><span class="name">Casimiro, Ronald</span><span class="leader"></span><span class="num">696-3365</span></div>
+      <div class="entry"><span class="name">Castro, Jewel</span><span class="leader"></span><span class="num">738-3155</span></div>
+      <div class="entry"><span class="name">Castro, Lovely</span><span class="leader"></span><span class="num">760-8779</span></div>
+      <div class="entry"><span class="name">Castro, Nova</span><span class="leader"></span><span class="num">514-0862</span></div>
+      <div class="entry"><span class="name">Castro, Rayver</span><span class="leader"></span><span class="num">964-9333</span></div>
+      <div class="entry"><span class="name">Castro, Rosario</span><span class="leader"></span><span class="num">253-3681</span></div>
+      <div class="entry"><span class="name">Catapang, Erwin</span><span class="leader"></span><span class="num">012-1010</span></div>
+      <div class="entry"><span class="name">Catapang, Honey</span><span class="leader"></span><span class="num">971-7450</span></div>
+      <div class="entry"><span class="name">Cayabyab, Ambrosio</span><span class="leader"></span><span class="num">951-2588</span></div>
+      <div class="entry"><span class="name">Cayabyab, Bing</span><span class="leader"></span><span class="num">530-2507</span></div>
+      <div class="entry"><span class="name">Cayabyab, Erwin</span><span class="leader"></span><span class="num">603-6291</span></div>
+      <div class="entry"><span class="name">Cayabyab, Zaldy</span><span class="leader"></span><span class="num">291-1374</span></div>
+      <div class="entry"><span class="name">Cayetano, Benigno</span><span class="leader"></span><span class="num">759-6897</span></div>
+      <div class="entry"><span class="name">Cayetano, Cherrie</span><span class="leader"></span><span class="num">995-5194</span></div>
+      <div class="entry"><span class="name">Cayetano, Jhun</span><span class="leader"></span><span class="num">484-1874</span></div>
+      <div class="entry"><span class="name">Cayetano, Jinggoy</span><span class="leader"></span><span class="num">805-9250</span></div>
+      <div class="entry"><span class="name">Cayetano, Juan</span><span class="leader"></span><span class="num">640-4961</span></div>
+      <div class="entry"><span class="name">Cayetano, Nova</span><span class="leader"></span><span class="num">767-4403</span></div>
+      <div class="entry"><span class="name">Ceballos, May</span><span class="leader"></span><span class="num">899-9032</span></div>
+      <div class="entry"><span class="name">Centeno, Gregorio</span><span class="leader"></span><span class="num">443-8238</span></div>
+      <div class="entry"><span class="name">Centeno, Jenina</span><span class="leader"></span><span class="num">202-6563</span></div>
+      <div class="entry"><span class="name">Chico, Chesca</span><span class="leader"></span><span class="num">607-3705</span></div>
+      <div class="entry"><span class="name">Chico, Dexter</span><span class="leader"></span><span class="num">089-3070</span></div>
+      <div class="entry"><span class="name">Chua, Trinidad</span><span class="leader"></span><span class="num">871-8261</span></div>
+      <div class="entry"><span class="name">Chua, Virgie</span><span class="leader"></span><span class="num">652-6461</span></div>
+      <div class="entry"><span class="name">Clemente, Wilhelmina</span><span class="leader"></span><span class="num">884-1143</span></div>
+      <div class="entry"><span class="name">Cojuangco, Arman</span><span class="leader"></span><span class="num">730-5456</span></div>
+      <div class="entry"><span class="name">Cojuangco, Christopher</span><span class="leader"></span><span class="num">154-3788</span></div>
+      <div class="entry"><span class="name">Cojuangco, Eufrocina</span><span class="leader"></span><span class="num">039-4700</span></div>
+      <div class="entry"><span class="name">Cojuangco, Jasmine</span><span class="leader"></span><span class="num">782-4186</span></div>
+      <div class="entry"><span class="name">Cojuangco, Lea</span><span class="leader"></span><span class="num">391-2181</span></div>
+      <div class="entry"><span class="name">Cojuangco, Pao</span><span class="leader"></span><span class="num">429-3267</span></div>
+      <div class="entry"><span class="name">Coloma, Donita</span><span class="leader"></span><span class="num">046-0609</span></div>
+      <div class="entry"><span class="name">Coloma, Gina</span><span class="leader"></span><span class="num">737-8954</span></div>
+      <div class="entry"><span class="name">Coloma, Jose</span><span class="leader"></span><span class="num">252-9197</span></div>
+      <div class="entry"><span class="name">Coloma, Kim</span><span class="leader"></span><span class="num">191-5154</span></div>
+      <div class="entry"><span class="name">Coloma, Rosa</span><span class="leader"></span><span class="num">432-3006</span></div>
+      <div class="entry"><span class="name">Coloma, Ysabel</span><span class="leader"></span><span class="num">335-5218</span></div>
+      <div class="entry"><span class="name">Corpuz, Cesar</span><span class="leader"></span><span class="num">758-0502</span></div>
+      <div class="entry"><span class="name">Corral, Apolinario</span><span class="leader"></span><span class="num">869-9954</span></div>
+      <div class="entry"><span class="name">Cruz, Jenina</span><span class="leader"></span><span class="num">016-4272</span></div>
+      <div class="entry"><span class="name">Cruz, Jocelyn</span><span class="leader"></span><span class="num">728-5277</span></div>
+      <div class="entry"><span class="name">Cuenca, Manuel</span><span class="leader"></span><span class="num">807-9764</span></div>
+      <div class="entry"><span class="name">Custodio, Remedios</span><span class="leader"></span><span class="num">307-6167</span></div>
+      <div class="entry"><span class="name">Custodio, Tintin</span><span class="leader"></span><span class="num">457-8824</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; D &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Dacanay, Bimbo</span><span class="leader"></span><span class="num">152-9221</span></div></div>
+      <div class="entry"><span class="name">Dacanay, Jinky</span><span class="leader"></span><span class="num">006-6718</span></div>
+      <div class="entry"><span class="name">Dacanay, Vicky</span><span class="leader"></span><span class="num">980-1013</span></div>
+      <div class="entry"><span class="name">Dalisay, Dolly</span><span class="leader"></span><span class="num">642-2621</span></div>
+      <div class="entry"><span class="name">Dalisay, Ivan</span><span class="leader"></span><span class="num">382-2646</span></div>
+      <div class="entry"><span class="name">Dalisay, Jovit</span><span class="leader"></span><span class="num">389-2527</span></div>
+      <div class="entry"><span class="name">Dalisay, Odette</span><span class="leader"></span><span class="num">703-7770</span></div>
+      <div class="entry"><span class="name">Dalisay, Ompong</span><span class="leader"></span><span class="num">166-2962</span></div>
+      <div class="entry flagged"><span class="hw mark-asterisk">*</span><span class="name hl-name">Damasco, Diwata</span><span class="leader"></span><span class="num">108-2693</span></div>
+      <div class="entry"><span class="name">Damasco, Erap</span><span class="leader"></span><span class="num">079-4846</span></div>
+      <div class="entry"><span class="name">Damasco, Jasmine</span><span class="leader"></span><span class="num">672-7900</span></div>
+      <div class="entry"><span class="name">Damasco, Tessie</span><span class="leader"></span><span class="num">194-4861</span></div>
+      <div class="entry"><span class="name">Dandan, Bogart</span><span class="leader"></span><span class="num">983-1625</span></div>
+      <div class="entry"><span class="name">Dandan, Cherry</span><span class="leader"></span><span class="num">002-6693</span></div>
+      <div class="entry"><span class="name">Dandan, Christopher</span><span class="leader"></span><span class="num">245-2847</span></div>
+      <div class="entry"><span class="name">Dandan, Emilio</span><span class="leader"></span><span class="num">749-7157</span></div>
+      <div class="entry"><span class="name">Dantes, Honey</span><span class="leader"></span><span class="num">510-8433</span></div>
+      <div class="entry"><span class="name">Dantes, Josefa</span><span class="leader"></span><span class="num">806-1771</span></div>
+      <div class="entry"><span class="name">Dantes, Leizel</span><span class="leader"></span><span class="num">895-4489</span></div>
+      <div class="entry"><span class="name">David, Almira</span><span class="leader"></span><span class="num">508-5680</span></div>
+      <div class="entry"><span class="name">David, Donabel</span><span class="leader"></span><span class="num">987-5096</span></div>
+      <div class="entry"><span class="name">David, Jhonel</span><span class="leader"></span><span class="num">999-2900</span></div>
+      <div class="entry"><span class="name">David, Maria</span><span class="leader"></span><span class="num">748-7518</span></div>
+      <div class="entry"><span class="name">David, Nesty</span><span class="leader"></span><span class="num">379-5820</span></div>
+      <div class="entry"><span class="name">De Guzman, Ferdinand</span><span class="leader"></span><span class="num">335-8525</span></div>
+      <div class="entry"><span class="name">De Guzman, Leni</span><span class="leader"></span><span class="num">165-5286</span></div>
+      <div class="entry"><span class="name">De Jesus, Bonifacio</span><span class="leader"></span><span class="num">445-4521</span></div>
+      <div class="entry"><span class="name">De Jesus, Mila</span><span class="leader"></span><span class="num">662-0725</span></div>
+      <div class="entry"><span class="name">De Jesus, Noel</span><span class="leader"></span><span class="num">620-9949</span></div>
+      <div class="entry"><span class="name">De Jesus, Ronilo</span><span class="leader"></span><span class="num">710-4906</span></div>
+      <div class="entry"><span class="name">De La Paz, Orland</span><span class="leader"></span><span class="num">142-4405</span></div>
+      <div class="entry"><span class="name">De La Paz, Rowena</span><span class="leader"></span><span class="num">750-5770</span></div>
+      <div class="entry"><span class="name">De Leon, Fidel</span><span class="leader"></span><span class="num">674-9914</span></div>
+      <div class="entry"><span class="name">De Leon, Grace</span><span class="leader"></span><span class="num">179-1293</span></div>
+      <div class="entry"><span class="name">De Leon, Mabini</span><span class="leader"></span><span class="num">820-7538</span></div>
+      <div class="entry"><span class="name">De Leon, Shiela</span><span class="leader"></span><span class="num">536-6229</span></div>
+      <div class="entry"><span class="name">De Ocampo, Ivan</span><span class="leader"></span><span class="num">616-2504</span></div>
+      <div class="entry"><span class="name">De Ocampo, Mila</span><span class="leader"></span><span class="num">180-3875</span></div>
+      <div class="entry"><span class="name">De Vera, Arman</span><span class="leader"></span><span class="num">427-2880</span></div>
+      <div class="entry"><span class="name">De Vera, Arnel</span><span class="leader"></span><span class="num">481-8502</span></div>
+      <div class="entry"><span class="name">Del Rosario, Cherry</span><span class="leader"></span><span class="num">974-8095</span></div>
+      <div class="entry"><span class="name">Del Rosario, Elmer</span><span class="leader"></span><span class="num">746-0029</span></div>
+      <div class="entry"><span class="name">Del Rosario, Jeddah</span><span class="leader"></span><span class="num">823-8486</span></div>
+      <div class="entry"><span class="name">Dela Cruz, Dranreb</span><span class="leader"></span><span class="num">550-6439</span></div>
+      <div class="entry"><span class="name">Dela Cruz, Vicky</span><span class="leader"></span><span class="num">519-1743</span></div>
+      <div class="entry"><span class="name">Delos Santos, Antonio</span><span class="leader"></span><span class="num">279-5062</span></div>
+      <div class="entry"><span class="name">Delos Santos, Loida</span><span class="leader"></span><span class="num">973-3509</span></div>
+      <div class="entry"><span class="name">Diaz, Mabini</span><span class="leader"></span><span class="num">499-3475</span></div>
+      <div class="entry"><span class="name">Dimaandal, Marlon</span><span class="leader"></span><span class="num">988-0841</span></div>
+      <div class="entry"><span class="name">Dimaandal, Tintin</span><span class="leader"></span><span class="num">938-8882</span></div>
+      <div class="entry"><span class="name">Dimaculangan, Christopher</span><span class="leader"></span><span class="num">070-9749</span></div>
+      <div class="entry"><span class="name">Dimaculangan, Gwyneth</span><span class="leader"></span><span class="num">655-7080</span></div>
+      <div class="entry"><span class="name">Dimapilis, Juliet</span><span class="leader"></span><span class="num">959-1848</span></div>
+    </div>
+    <div class="page-num">2 / 8</div>
+    
+  </div>
+  </div>
+  <div class="sheet">
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">D <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Dionisio, Dolly</span><span class="leader"></span><span class="num">019-7225</span></div></div>
+      <div class="entry"><span class="name">Dionisio, Rechel</span><span class="leader"></span><span class="num">096-1588</span></div>
+      <div class="entry"><span class="name">Dizon, Elmer</span><span class="leader"></span><span class="num">430-6211</span></div>
+      <div class="entry"><span class="name">Dizon, Gwyneth</span><span class="leader"></span><span class="num">221-7933</span></div>
+      <div class="entry"><span class="name">Dizon, Susan</span><span class="leader"></span><span class="num">980-4038</span></div>
+      <div class="entry"><span class="name">Domingo, Rustom</span><span class="leader"></span><span class="num">376-9345</span></div>
+      <div class="entry"><span class="name">Domingo, Wilma</span><span class="leader"></span><span class="num">927-5724</span></div>
+      <div class="entry"><span class="name">Duque, Mabini</span><span class="leader"></span><span class="num">468-1867</span></div>
+      <div class="entry"><span class="name">Duran, Estelita</span><span class="leader"></span><span class="num">616-8341</span></div>
+      <div class="entry"><span class="name">Duran, Jerome</span><span class="leader"></span><span class="num">150-0400</span></div>
+      <div class="entry"><span class="name">Duterte, Edgardo</span><span class="leader"></span><span class="num">811-2275</span></div>
+      <div class="entry"><span class="name">Duterte, Froilan</span><span class="leader"></span><span class="num">820-9906</span></div>
+      <div class="entry"><span class="name">Duterte, Glenda</span><span class="leader"></span><span class="num">135-8837</span></div>
+      <div class="entry"><span class="name">Duterte, Jenina</span><span class="leader"></span><span class="num">836-7541</span></div>
+      <div class="entry"><span class="name">Duterte, Toto</span><span class="leader"></span><span class="num">125-2223</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; E &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Eleazar, Cherry</span><span class="leader"></span><span class="num">139-9579</span></div></div>
+      <div class="entry"><span class="name">Eleazar, Virgie</span><span class="leader"></span><span class="num">586-8792</span></div>
+      <div class="entry"><span class="name">Elizalde, Rubylyn</span><span class="leader"></span><span class="num">348-9939</span></div>
+      <div class="entry"><span class="name">Enriquez, Jhun-jhun</span><span class="leader"></span><span class="num">068-1653</span></div>
+      <div class="entry"><span class="name">Escudero, Jhonel</span><span class="leader"></span><span class="num">830-9632</span></div>
+      <div class="entry"><span class="name">Escudero, Ming</span><span class="leader"></span><span class="num">698-4088</span></div>
+      <div class="entry"><span class="name">Espina, Jessa</span><span class="leader"></span><span class="num">922-9286</span></div>
+      <div class="entry"><span class="name">Espina, Lovely</span><span class="leader"></span><span class="num">671-8179</span></div>
+      <div class="entry"><span class="name">Espina, Ricardo</span><span class="leader"></span><span class="num">951-8835</span></div>
+      <div class="entry"><span class="name">Espina, Rochelle</span><span class="leader"></span><span class="num">506-4399</span></div>
+      <div class="entry"><span class="name">Espino, Ronnie</span><span class="leader"></span><span class="num">626-4678</span></div>
+      <div class="entry"><span class="name">Esteban, Arnel</span><span class="leader"></span><span class="num">855-5370</span></div>
+      <div class="entry"><span class="name">Estrada, Allan</span><span class="leader"></span><span class="num">517-7471</span></div>
+      <div class="entry"><span class="name">Estrella, Apolinario</span><span class="leader"></span><span class="num">299-0535</span></div>
+      <div class="entry"><span class="name">Estrella, Baby</span><span class="leader"></span><span class="num">404-9819</span></div>
+      <div class="entry"><span class="name">Estrella, Michelle</span><span class="leader"></span><span class="num">651-3115</span></div>
+      <div class="entry"><span class="name">Estrella, Rhea</span><span class="leader"></span><span class="num">459-9654</span></div>
+      <div class="entry"><span class="name">Evangelista, Mark</span><span class="leader"></span><span class="num">341-2754</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; F &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Fabros, Gloria</span><span class="leader"></span><span class="num">823-8450</span></div></div>
+      <div class="entry"><span class="name">Fabros, Jinky</span><span class="leader"></span><span class="num">142-1679</span></div>
+      <div class="entry"><span class="name">Fabros, Milagros</span><span class="leader"></span><span class="num">681-9649</span></div>
+      <div class="entry"><span class="name">Fabros, Odette</span><span class="leader"></span><span class="num">028-5221</span></div>
+      <div class="entry"><span class="name">Fajardo, Juan</span><span class="leader"></span><span class="num">550-4729</span></div>
+      <div class="entry"><span class="name">Faustino, Kim</span><span class="leader"></span><span class="num">764-1480</span></div>
+      <div class="entry"><span class="name">Faustino, Kyla</span><span class="leader"></span><span class="num">369-2939</span></div>
+      <div class="entry"><span class="name">Feliciano, Charmaine</span><span class="leader"></span><span class="num">392-1463</span></div>
+      <div class="entry"><span class="name">Feliciano, Cristina</span><span class="leader"></span><span class="num">984-9424</span></div>
+      <div class="entry"><span class="name">Feliciano, Manuel</span><span class="leader"></span><span class="num">388-9335</span></div>
+      <div class="entry"><span class="name">Fernandez, Arvin</span><span class="leader"></span><span class="num">918-8515</span></div>
+      <div class="entry"><span class="name">Fernandez, Roxanne</span><span class="leader"></span><span class="num">816-6636</span></div>
+      <div class="entry"><span class="name">Ferrer, Angelica</span><span class="leader"></span><span class="num">554-5675</span></div>
+      <div class="entry"><span class="name">Ferrer, Pao</span><span class="leader"></span><span class="num">876-6730</span></div>
+      <div class="entry"><span class="name">Figueroa, Cynthia</span><span class="leader"></span><span class="num">688-5085</span></div>
+      <div class="entry"><span class="name">Figueroa, Odette</span><span class="leader"></span><span class="num">395-1337</span></div>
+      <div class="entry"><span class="name">Flores, Chesca</span><span class="leader"></span><span class="num">355-5234</span></div>
+      <div class="entry"><span class="name">Flores, Divine</span><span class="leader"></span><span class="num">390-9370</span></div>
+      <div class="entry"><span class="name">Fortun, Liwayway</span><span class="leader"></span><span class="num">059-3946</span></div>
+      <div class="entry"><span class="name">Franco, Ferdinand</span><span class="leader"></span><span class="num">196-8625</span></div>
+      <div class="entry"><span class="name">Franco, Leni</span><span class="leader"></span><span class="num">258-2525</span></div>
+      <div class="entry"><span class="name">Fuentes, Jhun</span><span class="leader"></span><span class="num">051-8700</span></div>
+      <div class="entry"><span class="name">Fuentes, Pearl</span><span class="leader"></span><span class="num">261-3331</span></div>
+      <div class="entry"><span class="name">Fuentes, Salve</span><span class="leader"></span><span class="num">803-7749</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; G &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Gabriel, Alvin</span><span class="leader"></span><span class="num">047-7729</span></div></div>
+      <div class="entry"><span class="name">Gabriel, Baby</span><span class="leader"></span><span class="num">486-1193</span></div>
+      <div class="entry"><span class="name">Gabriel, Bituin</span><span class="leader"></span><span class="num">088-7118</span></div>
+      <div class="entry"><span class="name">Gabriel, Cesar</span><span class="leader"></span><span class="num">378-4669</span></div>
+      <div class="entry flagged"><span class="hw mark-question">?</span><span class="name hl-name">Gabriel, Eufrocina</span><span class="leader"></span><span class="num">543-6751</span></div>
+      <div class="entry"><span class="name">Galang, Arnel</span><span class="leader"></span><span class="num">724-7172</span></div>
+      <div class="entry"><span class="name">Galang, Dennis</span><span class="leader"></span><span class="num">672-3951</span></div>
+      <div class="entry"><span class="name">Galang, Rosanna</span><span class="leader"></span><span class="num">144-1586</span></div>
+      <div class="entry"><span class="name">Galvez, Diwata</span><span class="leader"></span><span class="num">196-3116</span></div>
+      <div class="entry"><span class="name">Galvez, Rhea</span><span class="leader"></span><span class="num">985-2616</span></div>
+      <div class="entry"><span class="name">Garcia, Erap</span><span class="leader"></span><span class="num">053-7873</span></div>
+      <div class="entry"><span class="name">Garcia, Nanette</span><span class="leader"></span><span class="num">966-4040</span></div>
+      <div class="entry"><span class="name">Gatchalian, Odette</span><span class="leader"></span><span class="num">765-0266</span></div>
+      <div class="entry"><span class="name">Gatchalian, Salve</span><span class="leader"></span><span class="num">037-3131</span></div>
+      <div class="entry"><span class="name">Gener, Gerald</span><span class="leader"></span><span class="num">935-7894</span></div>
+      <div class="entry"><span class="name">Gerona, Mila</span><span class="leader"></span><span class="num">348-4581</span></div>
+      <div class="entry"><span class="name">Geronimo, Aljon</span><span class="leader"></span><span class="num">392-3858</span></div>
+      <div class="entry"><span class="name">Geronimo, Almira</span><span class="leader"></span><span class="num">669-5890</span></div>
+      <div class="entry"><span class="name">Geronimo, Lea</span><span class="leader"></span><span class="num">839-2848</span></div>
+      <div class="entry"><span class="name">Geronimo, Lovely</span><span class="leader"></span><span class="num">209-5147</span></div>
+      <div class="entry"><span class="name">Go, Dranreb</span><span class="leader"></span><span class="num">793-4264</span></div>
+      <div class="entry"><span class="name">Golez, Gerald</span><span class="leader"></span><span class="num">540-9938</span></div>
+      <div class="entry"><span class="name">Golez, Jhun</span><span class="leader"></span><span class="num">405-2144</span></div>
+      <div class="entry"><span class="name">Golez, Vivian</span><span class="leader"></span><span class="num">135-5718</span></div>
+      <div class="entry"><span class="name">Gomez, Ronnie</span><span class="leader"></span><span class="num">976-5400</span></div>
+      <div class="entry"><span class="name">Gomez, Zeny</span><span class="leader"></span><span class="num">820-1353</span></div>
+      <div class="entry"><span class="name">Gonzales, Benigno</span><span class="leader"></span><span class="num">386-9911</span></div>
+      <div class="entry"><span class="name">Gonzales, Leizel</span><span class="leader"></span><span class="num">504-2390</span></div>
+      <div class="entry"><span class="name">Gonzales, Ranilo</span><span class="leader"></span><span class="num">067-3456</span></div>
+      <div class="entry"><span class="name">Gregorio, Luzviminda</span><span class="leader"></span><span class="num">845-1276</span></div>
+      <div class="entry"><span class="name">Gregorio, Pearl</span><span class="leader"></span><span class="num">184-0427</span></div>
+      <div class="entry"><span class="name">Gregorio, Rovic</span><span class="leader"></span><span class="num">313-4118</span></div>
+      <div class="entry"><span class="name">Gregorio, Sergio</span><span class="leader"></span><span class="num">047-1218</span></div>
+      <div class="entry"><span class="name">Guanzon, Flordeliza</span><span class="leader"></span><span class="num">288-9909</span></div>
+      <div class="entry"><span class="name">Guanzon, Froilan</span><span class="leader"></span><span class="num">460-8410</span></div>
+      <div class="entry"><span class="name">Guanzon, Jhoana</span><span class="leader"></span><span class="num">343-5238</span></div>
+      <div class="entry"><span class="name">Guanzon, Maria</span><span class="leader"></span><span class="num">127-6029</span></div>
+      <div class="entry"><span class="name">Guanzon, Rustan</span><span class="leader"></span><span class="num">197-1845</span></div>
+      <div class="entry"><span class="name">Guevarra, Efren</span><span class="leader"></span><span class="num">046-0893</span></div>
+      <div class="entry"><span class="name">Guevarra, Leni</span><span class="leader"></span><span class="num">605-0920</span></div>
+      <div class="entry"><span class="name">Guevarra, Rodrigo</span><span class="leader"></span><span class="num">654-0939</span></div>
+      <div class="entry"><span class="name">Guiao, Aldous</span><span class="leader"></span><span class="num">879-2370</span></div>
+      <div class="entry"><span class="name">Guiao, Joanna</span><span class="leader"></span><span class="num">660-1380</span></div>
+      <div class="entry"><span class="name">Guico, Consolacion</span><span class="leader"></span><span class="num">902-7385</span></div>
+      <div class="entry"><span class="name">Guico, Fidel</span><span class="leader"></span><span class="num">085-5077</span></div>
+      <div class="entry"><span class="name">Guico, Ronald</span><span class="leader"></span><span class="num">185-9590</span></div>
+      <div class="entry"><span class="name">Gutierrez, Juan</span><span class="leader"></span><span class="num">456-2435</span></div>
+      <div class="entry"><span class="name">Gutierrez, Rechel</span><span class="leader"></span><span class="num">033-6070</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; H &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Habana, Bembol</span><span class="leader"></span><span class="num">506-9789</span></div></div>
+      <div class="entry"><span class="name">Habana, Ma-anne</span><span class="leader"></span><span class="num">389-7639</span></div>
+      <div class="entry"><span class="name">Hernandez, Claudine</span><span class="leader"></span><span class="num">527-5491</span></div>
+      <div class="entry"><span class="name">Hernandez, Dolly</span><span class="leader"></span><span class="num">694-9717</span></div>
+      <div class="entry"><span class="name">Hernandez, Mabel</span><span class="leader"></span><span class="num">345-8967</span></div>
+      <div class="entry"><span class="name">Hernandez, Pau</span><span class="leader"></span><span class="num">258-9874</span></div>
+      <div class="entry"><span class="name">Herrera, Araw</span><span class="leader"></span><span class="num">418-2948</span></div>
+      <div class="entry"><span class="name">Herrera, Leni</span><span class="leader"></span><span class="num">215-7043</span></div>
+      <div class="entry"><span class="name">Herrera, Ma-anne</span><span class="leader"></span><span class="num">661-0969</span></div>
+      <div class="entry"><span class="name">Herrera, Noel</span><span class="leader"></span><span class="num">078-1479</span></div>
+      <div class="entry"><span class="name">Herrera, Rustom</span><span class="leader"></span><span class="num">549-0133</span></div>
+      <div class="entry"><span class="name">Herrera, Vergel</span><span class="leader"></span><span class="num">794-3770</span></div>
+      <div class="entry"><span class="name">Herrera, Vivian</span><span class="leader"></span><span class="num">643-8209</span></div>
+      <div class="entry"><span class="name">Hidalgo, Benigno</span><span class="leader"></span><span class="num">614-5119</span></div>
+      <div class="entry"><span class="name">Hidalgo, Elton</span><span class="leader"></span><span class="num">448-7941</span></div>
+      <div class="entry"><span class="name">Hidalgo, Juan</span><span class="leader"></span><span class="num">124-9395</span></div>
+      <div class="entry"><span class="name">Hidalgo, Laarni</span><span class="leader"></span><span class="num">721-3396</span></div>
+      <div class="entry"><span class="name">Hizon, Bembol</span><span class="leader"></span><span class="num">968-6293</span></div>
+      <div class="entry"><span class="name">Hizon, Eufrocina</span><span class="leader"></span><span class="num">043-4712</span></div>
+      <div class="entry"><span class="name">Hizon, Harold</span><span class="leader"></span><span class="num">897-0613</span></div>
+    </div>
+    <div class="page-num">3 / 8</div>
+    
+  </div>
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">H <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Hizon, Jerrick</span><span class="leader"></span><span class="num">081-3814</span></div></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; I &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Ignacio, Jhonel</span><span class="leader"></span><span class="num">267-5161</span></div></div>
+      <div class="entry"><span class="name">Ignacio, Roi</span><span class="leader"></span><span class="num">851-1133</span></div>
+      <div class="entry"><span class="name">Ilagan, Ariel</span><span class="leader"></span><span class="num">206-0717</span></div>
+      <div class="entry"><span class="name">Imperial, Diosdado</span><span class="leader"></span><span class="num">425-1406</span></div>
+      <div class="entry"><span class="name">Imperial, Marites</span><span class="leader"></span><span class="num">581-3164</span></div>
+      <div class="entry"><span class="name">Imperial, Reynaldo</span><span class="leader"></span><span class="num">156-3214</span></div>
+      <div class="entry"><span class="name">Isip, Allan</span><span class="leader"></span><span class="num">581-9875</span></div>
+      <div class="entry"><span class="name">Isip, Angel</span><span class="leader"></span><span class="num">474-8920</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; J &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Jacinto, Chesca</span><span class="leader"></span><span class="num">166-9239</span></div></div>
+      <div class="entry"><span class="name">Jacinto, Emilio</span><span class="leader"></span><span class="num">328-9883</span></div>
+      <div class="entry"><span class="name">Jacinto, Jerome</span><span class="leader"></span><span class="num">878-2365</span></div>
+      <div class="entry"><span class="name">Jacinto, Kimberly</span><span class="leader"></span><span class="num">871-2580</span></div>
+      <div class="entry"><span class="name">Jacinto, Reyland</span><span class="leader"></span><span class="num">281-0998</span></div>
+      <div class="entry"><span class="name">Jacinto, Rica</span><span class="leader"></span><span class="num">495-1260</span></div>
+      <div class="entry"><span class="name">Jamir, Jhonel</span><span class="leader"></span><span class="num">124-0782</span></div>
+      <div class="entry"><span class="name">Jocson, Michael</span><span class="leader"></span><span class="num">840-3728</span></div>
+      <div class="entry"><span class="name">Joson, Ming</span><span class="leader"></span><span class="num">267-5892</span></div>
+      <div class="entry"><span class="name">Joson, Rosario</span><span class="leader"></span><span class="num">474-4341</span></div>
+      <div class="entry"><span class="name">Joson, Ruel</span><span class="leader"></span><span class="num">163-6642</span></div>
+      <div class="entry"><span class="name">Jover, Bing</span><span class="leader"></span><span class="num">682-2877</span></div>
+      <div class="entry"><span class="name">Jover, Bunso</span><span class="leader"></span><span class="num">407-7842</span></div>
+      <div class="entry"><span class="name">Juanico, Kaye</span><span class="leader"></span><span class="num">335-1415</span></div>
+      <div class="entry"><span class="name">Juanico, Noli</span><span class="leader"></span><span class="num">738-5314</span></div>
+      <div class="entry"><span class="name">Jularbal, Bogs</span><span class="leader"></span><span class="num">058-0821</span></div>
+      <div class="entry"><span class="name">Jularbal, Estelita</span><span class="leader"></span><span class="num">882-5231</span></div>
+      <div class="entry"><span class="name">Jularbal, Noli</span><span class="leader"></span><span class="num">423-0749</span></div>
+      <div class="entry"><span class="name">Jularbal, Ompong</span><span class="leader"></span><span class="num">979-2837</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; K &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Kalaw, Gloria</span><span class="leader"></span><span class="num">016-3394</span></div></div>
+      <div class="entry"><span class="name">Kapunan, Arvin</span><span class="leader"></span><span class="num">762-7749</span></div>
+      <div class="entry"><span class="name">Kapunan, Nanette</span><span class="leader"></span><span class="num">135-6337</span></div>
+      <div class="entry"><span class="name">Kapunan, Orland</span><span class="leader"></span><span class="num">641-7994</span></div>
+      <div class="entry"><span class="name">Kapunan, Pedro</span><span class="leader"></span><span class="num">369-1745</span></div>
+      <div class="entry"><span class="name">Kapunan, Tintin</span><span class="leader"></span><span class="num">491-5714</span></div>
+      <div class="entry"><span class="name">Katindig, Raffy</span><span class="leader"></span><span class="num">298-8044</span></div>
+      <div class="entry"><span class="name">Katindig, Rustom</span><span class="leader"></span><span class="num">936-3328</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; L &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Lacson, Heherson</span><span class="leader"></span><span class="num">619-7792</span></div></div>
+      <div class="entry"><span class="name">Lacson, Jerico</span><span class="leader"></span><span class="num">254-6819</span></div>
+      <div class="entry"><span class="name">Lacson, Mariano</span><span class="leader"></span><span class="num">686-1713</span></div>
+      <div class="entry"><span class="name">Lacuesta, Johnrey</span><span class="leader"></span><span class="num">118-6622</span></div>
+      <div class="entry"><span class="name">Lacuesta, Jovit</span><span class="leader"></span><span class="num">872-4022</span></div>
+      <div class="entry"><span class="name">Lagman, Jinggoy</span><span class="leader"></span><span class="num">385-4592</span></div>
+      <div class="entry"><span class="name">Lansang, Kimberly</span><span class="leader"></span><span class="num">122-0126</span></div>
+      <div class="entry"><span class="name">Lansang, Kyla</span><span class="leader"></span><span class="num">765-6807</span></div>
+      <div class="flag-wrap"><svg class="stain" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><ellipse cx="30" cy="30" rx="27" ry="24" transform="rotate(-8 30 30)"/><ellipse cx="31" cy="29" rx="19" ry="17" transform="rotate(6 31 29)"/></svg><div class="entry flagged"><span class="name">Lansang, Raffy</span><span class="leader"></span><span class="num">030-4478</span></div></div>
+      <div class="entry"><span class="name">Lansang, Rovic</span><span class="leader"></span><span class="num">345-6211</span></div>
+      <div class="entry"><span class="name">Lantion, Bunso</span><span class="leader"></span><span class="num">096-9141</span></div>
+      <div class="entry"><span class="name">Lantion, Christopher</span><span class="leader"></span><span class="num">872-8742</span></div>
+      <div class="entry"><span class="name">Lantion, Froilan</span><span class="leader"></span><span class="num">421-8117</span></div>
+      <div class="entry"><span class="name">Lantion, Ramon</span><span class="leader"></span><span class="num">285-1137</span></div>
+      <div class="entry"><span class="name">Lao, Cynthia</span><span class="leader"></span><span class="num">125-0699</span></div>
+      <div class="entry"><span class="name">Lao, Francis</span><span class="leader"></span><span class="num">573-6985</span></div>
+      <div class="entry"><span class="name">Lao, Ramon</span><span class="leader"></span><span class="num">988-7052</span></div>
+      <div class="entry"><span class="name">Lazaro, Ferdinand</span><span class="leader"></span><span class="num">083-9547</span></div>
+      <div class="entry"><span class="name">Ledesma, Allan</span><span class="leader"></span><span class="num">001-6164</span></div>
+      <div class="entry"><span class="name">Ledesma, Divine</span><span class="leader"></span><span class="num">291-7444</span></div>
+      <div class="entry"><span class="name">Legarda, Dennis</span><span class="leader"></span><span class="num">309-5285</span></div>
+      <div class="entry"><span class="name">Legarda, Dranreb</span><span class="leader"></span><span class="num">312-1916</span></div>
+      <div class="entry"><span class="name">Legarda, Jayvee</span><span class="leader"></span><span class="num">104-1519</span></div>
+      <div class="entry"><span class="name">Legarda, Orland</span><span class="leader"></span><span class="num">029-8098</span></div>
+      <div class="entry"><span class="name">Leynes, Bonifacio</span><span class="leader"></span><span class="num">021-9638</span></div>
+      <div class="entry"><span class="name">Leynes, Kyla</span><span class="leader"></span><span class="num">823-1886</span></div>
+      <div class="entry"><span class="name">Leynes, Pau</span><span class="leader"></span><span class="num">997-3060</span></div>
+      <div class="entry"><span class="name">Leynes, Reyland</span><span class="leader"></span><span class="num">847-7430</span></div>
+      <div class="entry"><span class="name">Lim, Cherry</span><span class="leader"></span><span class="num">619-9758</span></div>
+      <div class="entry"><span class="name">Lim, Elpidio</span><span class="leader"></span><span class="num">734-2907</span></div>
+      <div class="entry"><span class="name">Lim, Ricardo</span><span class="leader"></span><span class="num">284-2547</span></div>
+      <div class="entry"><span class="name">Liongson, Lorna</span><span class="leader"></span><span class="num">466-3389</span></div>
+      <div class="entry"><span class="name">Litonjua, Fernan</span><span class="leader"></span><span class="num">025-7909</span></div>
+      <div class="entry"><span class="name">Litonjua, Ricardo</span><span class="leader"></span><span class="num">717-1044</span></div>
+      <div class="entry"><span class="name">Litonjua, Susan</span><span class="leader"></span><span class="num">340-9042</span></div>
+      <div class="entry"><span class="name">Llamas, Christian</span><span class="leader"></span><span class="num">946-7247</span></div>
+      <div class="entry"><span class="name">Llamas, Jerome</span><span class="leader"></span><span class="num">970-8501</span></div>
+      <div class="entry"><span class="name">Lontoc, Donabel</span><span class="leader"></span><span class="num">360-7501</span></div>
+      <div class="entry"><span class="name">Lontoc, Rosanna</span><span class="leader"></span><span class="num">952-0436</span></div>
+      <div class="entry"><span class="name">Lontoc, Susan</span><span class="leader"></span><span class="num">487-1599</span></div>
+      <div class="entry"><span class="name">Lopez, Benigno</span><span class="leader"></span><span class="num">229-1124</span></div>
+      <div class="entry"><span class="name">Lopez, Esperanza</span><span class="leader"></span><span class="num">317-6421</span></div>
+      <div class="entry"><span class="name">Lopez, Junjun</span><span class="leader"></span><span class="num">656-8346</span></div>
+      <div class="entry"><span class="name">Lopez, Mark</span><span class="leader"></span><span class="num">006-2972</span></div>
+      <div class="entry"><span class="name">Lopez, Romeo</span><span class="leader"></span><span class="num">739-3490</span></div>
+      <div class="entry"><span class="name">Lorenzo, Aljon</span><span class="leader"></span><span class="num">305-6389</span></div>
+      <div class="entry"><span class="name">Luna, Corazon</span><span class="leader"></span><span class="num">567-1524</span></div>
+      <div class="entry"><span class="name">Luna, Dexter</span><span class="leader"></span><span class="num">798-9173</span></div>
+      <div class="entry"><span class="name">Luna, Glaiza</span><span class="leader"></span><span class="num">219-3066</span></div>
+      <div class="entry"><span class="name">Luna, Johnrey</span><span class="leader"></span><span class="num">273-6502</span></div>
+      <div class="entry"><span class="name">Luna, Rodel</span><span class="leader"></span><span class="num">433-6735</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; M &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Macapagal, Kier</span><span class="leader"></span><span class="num">882-0783</span></div></div>
+      <div class="entry"><span class="name">Macaraeg, Krystal</span><span class="leader"></span><span class="num">383-7056</span></div>
+      <div class="entry"><span class="name">Macatangay, Ariel</span><span class="leader"></span><span class="num">718-8796</span></div>
+      <div class="entry"><span class="name">Macatangay, Ronilo</span><span class="leader"></span><span class="num">779-4419</span></div>
+      <div class="entry"><span class="name">Madrigal, Glenda</span><span class="leader"></span><span class="num">520-3673</span></div>
+      <div class="entry"><span class="name">Madrigal, Imelda</span><span class="leader"></span><span class="num">566-4728</span></div>
+      <div class="entry"><span class="name">Madrigal, Ramon</span><span class="leader"></span><span class="num">224-2266</span></div>
+      <div class="entry"><span class="name">Madrigal, Wilhelmina</span><span class="leader"></span><span class="num">018-5940</span></div>
+      <div class="entry"><span class="name">Madrigal, Zeny</span><span class="leader"></span><span class="num">637-8167</span></div>
+      <div class="entry"><span class="name">Magbanua, Francis</span><span class="leader"></span><span class="num">381-4634</span></div>
+      <div class="entry"><span class="name">Magbanua, Irish</span><span class="leader"></span><span class="num">441-1146</span></div>
+      <div class="entry"><span class="name">Magbanua, Liwayway</span><span class="leader"></span><span class="num">920-0653</span></div>
+      <div class="entry"><span class="name">Magbanua, Princess</span><span class="leader"></span><span class="num">116-9238</span></div>
+      <div class="entry"><span class="name">Magbanua, Renz</span><span class="leader"></span><span class="num">692-3891</span></div>
+      <div class="entry"><span class="name">Magno, Rica</span><span class="leader"></span><span class="num">559-2830</span></div>
+      <div class="entry"><span class="name">Magsaysay, Gerlie</span><span class="leader"></span><span class="num">161-4179</span></div>
+      <div class="entry"><span class="name">Malabanan, Ariel</span><span class="leader"></span><span class="num">596-9052</span></div>
+      <div class="entry"><span class="name">Malabanan, Rovic</span><span class="leader"></span><span class="num">686-8850</span></div>
+      <div class="entry"><span class="name">Malapit, Clarissa</span><span class="leader"></span><span class="num">680-2711</span></div>
+      <div class="entry flagged"><span class="hw mark-check">chk&rsquo;d</span><span class="name hl-name">Malig, Christian</span><span class="leader"></span><span class="num">982-6652</span></div>
+      <div class="entry"><span class="name">Malig, Gregorio</span><span class="leader"></span><span class="num">710-2316</span></div>
+      <div class="entry"><span class="name">Malonzo, Reymark</span><span class="leader"></span><span class="num">462-1237</span></div>
+      <div class="entry"><span class="name">Mamaril, Edmund</span><span class="leader"></span><span class="num">080-9044</span></div>
+      <div class="entry"><span class="name">Mamaril, Glenda</span><span class="leader"></span><span class="num">314-4825</span></div>
+      <div class="entry"><span class="name">Mamaril, Ricardo</span><span class="leader"></span><span class="num">075-7357</span></div>
+      <div class="entry"><span class="name">Manalo, Dennis</span><span class="leader"></span><span class="num">284-7428</span></div>
+      <div class="entry"><span class="name">Manalo, Gerald</span><span class="leader"></span><span class="num">002-6396</span></div>
+      <div class="entry"><span class="name">Manalo, Jonna</span><span class="leader"></span><span class="num">335-3467</span></div>
+      <div class="entry"><span class="name">Manansala, Ana</span><span class="leader"></span><span class="num">800-5883</span></div>
+      <div class="entry"><span class="name">Manansala, Apolinario</span><span class="leader"></span><span class="num">699-6990</span></div>
+      <div class="entry"><span class="name">Manansala, Mabini</span><span class="leader"></span><span class="num">611-8692</span></div>
+      <div class="entry"><span class="name">Manansala, Odette</span><span class="leader"></span><span class="num">459-6184</span></div>
+      <div class="entry"><span class="name">Manlangit, Eufrocina</span><span class="leader"></span><span class="num">195-9820</span></div>
+      <div class="entry"><span class="name">Manlangit, Ivan</span><span class="leader"></span><span class="num">873-7916</span></div>
+      <div class="entry"><span class="name">Manlangit, Maria</span><span class="leader"></span><span class="num">773-2292</span></div>
+      <div class="entry"><span class="name">Manlangit, Nesty</span><span class="leader"></span><span class="num">942-2458</span></div>
+      <div class="entry"><span class="name">Manlangit, Vivian</span><span class="leader"></span><span class="num">473-9508</span></div>
+      <div class="entry"><span class="name">Manuel, Cherrie</span><span class="leader"></span><span class="num">516-7378</span></div>
+    </div>
+    <div class="page-num">4 / 8</div>
+    
+  </div>
+  </div>
+  <div class="sheet">
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">M <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Manuel, Mabini</span><span class="leader"></span><span class="num">012-4781</span></div></div>
+      <div class="entry"><span class="name">Manuel, Pablo</span><span class="leader"></span><span class="num">679-2492</span></div>
+      <div class="entry"><span class="name">Marasigan, Reyland</span><span class="leader"></span><span class="num">797-1387</span></div>
+      <div class="entry"><span class="name">Marasigan, Wilma</span><span class="leader"></span><span class="num">428-9771</span></div>
+      <div class="entry"><span class="name">Marcelo, Rica</span><span class="leader"></span><span class="num">926-9569</span></div>
+      <div class="entry"><span class="name">Marcos, Heherson</span><span class="leader"></span><span class="num">302-0894</span></div>
+      <div class="entry"><span class="name">Mariano, Angelo</span><span class="leader"></span><span class="num">606-9246</span></div>
+      <div class="entry"><span class="name">Mariano, Genalyn</span><span class="leader"></span><span class="num">631-4902</span></div>
+      <div class="entry"><span class="name">Marquez, Aljon</span><span class="leader"></span><span class="num">340-6224</span></div>
+      <div class="entry"><span class="name">Marquez, Angel</span><span class="leader"></span><span class="num">260-0049</span></div>
+      <div class="entry"><span class="name">Marquez, Benigno</span><span class="leader"></span><span class="num">640-5005</span></div>
+      <div class="entry"><span class="name">Marquez, Christian</span><span class="leader"></span><span class="num">891-5083</span></div>
+      <div class="entry"><span class="name">Marquez, Milagros</span><span class="leader"></span><span class="num">525-0802</span></div>
+      <div class="entry"><span class="name">Marquez, Orland</span><span class="leader"></span><span class="num">838-5654</span></div>
+      <div class="entry"><span class="name">Masangkay, Ariel</span><span class="leader"></span><span class="num">806-8116</span></div>
+      <div class="entry"><span class="name">Masangkay, Charmaine</span><span class="leader"></span><span class="num">882-0693</span></div>
+      <div class="entry"><span class="name">Masangkay, Jake</span><span class="leader"></span><span class="num">937-3921</span></div>
+      <div class="entry"><span class="name">Masangkay, Ompong</span><span class="leader"></span><span class="num">964-3249</span></div>
+      <div class="entry"><span class="name">Masangkay, Ysabel</span><span class="leader"></span><span class="num">834-8897</span></div>
+      <div class="entry"><span class="name">Matias, May</span><span class="leader"></span><span class="num">133-6070</span></div>
+      <div class="entry"><span class="name">Matias, Roel</span><span class="leader"></span><span class="num">761-7204</span></div>
+      <div class="entry"><span class="name">Matias, Vener</span><span class="leader"></span><span class="num">249-2417</span></div>
+      <div class="entry"><span class="name">Maypa, Baby</span><span class="leader"></span><span class="num">070-7620</span></div>
+      <div class="entry"><span class="name">Maypa, Jayson</span><span class="leader"></span><span class="num">924-0960</span></div>
+      <div class="entry"><span class="name">Mejia, Bogs</span><span class="leader"></span><span class="num">745-5559</span></div>
+      <div class="entry"><span class="name">Mejia, Cynthia</span><span class="leader"></span><span class="num">527-4558</span></div>
+      <div class="entry"><span class="name">Mejia, Malaya</span><span class="leader"></span><span class="num">713-4844</span></div>
+      <div class="entry"><span class="name">Mejia, Nico</span><span class="leader"></span><span class="num">374-0741</span></div>
+      <div class="entry"><span class="name">Mendez, Apolinario</span><span class="leader"></span><span class="num">875-7408</span></div>
+      <div class="entry"><span class="name">Mendez, Jenina</span><span class="leader"></span><span class="num">708-3986</span></div>
+      <div class="entry"><span class="name">Mendoza, Gerlie</span><span class="leader"></span><span class="num">497-7886</span></div>
+      <div class="entry"><span class="name">Mendoza, Yolanda</span><span class="leader"></span><span class="num">105-0430</span></div>
+      <div class="entry"><span class="name">Mercado, Pearl</span><span class="leader"></span><span class="num">793-5543</span></div>
+      <div class="entry"><span class="name">Mercado, Renz</span><span class="leader"></span><span class="num">843-9419</span></div>
+      <div class="entry"><span class="name">Miranda, Emilio</span><span class="leader"></span><span class="num">940-0971</span></div>
+      <div class="entry"><span class="name">Miranda, Fernan</span><span class="leader"></span><span class="num">630-7248</span></div>
+      <div class="entry"><span class="name">Miranda, Jake</span><span class="leader"></span><span class="num">513-7726</span></div>
+      <div class="entry"><span class="name">Mislang, Dennis</span><span class="leader"></span><span class="num">338-7739</span></div>
+      <div class="entry"><span class="name">Mislang, Roxanne</span><span class="leader"></span><span class="num">055-3073</span></div>
+      <div class="entry"><span class="name">Mojica, Bonifacio</span><span class="leader"></span><span class="num">417-5421</span></div>
+      <div class="entry"><span class="name">Mojica, Juliet</span><span class="leader"></span><span class="num">348-8318</span></div>
+      <div class="entry"><span class="name">Mojica, Odette</span><span class="leader"></span><span class="num">718-8998</span></div>
+      <div class="entry"><span class="name">Mojica, Ramon</span><span class="leader"></span><span class="num">747-1557</span></div>
+      <div class="entry"><span class="name">Mojica, Ronald</span><span class="leader"></span><span class="num">279-3531</span></div>
+      <div class="entry"><span class="name">Mojica, Rovilson</span><span class="leader"></span><span class="num">907-9431</span></div>
+      <div class="entry"><span class="name">Mojica, Ruel</span><span class="leader"></span><span class="num">063-3388</span></div>
+      <div class="entry"><span class="name">Mojica, Yolanda</span><span class="leader"></span><span class="num">467-9239</span></div>
+      <div class="entry"><span class="name">Molina, Dolly</span><span class="leader"></span><span class="num">597-5040</span></div>
+      <div class="entry"><span class="name">Montano, Christopher</span><span class="leader"></span><span class="num">673-9562</span></div>
+      <div class="entry"><span class="name">Montano, Jhonel</span><span class="leader"></span><span class="num">503-0981</span></div>
+      <div class="entry"><span class="name">Montano, Jhun</span><span class="leader"></span><span class="num">654-7489</span></div>
+      <div class="entry"><span class="name">Montano, Love</span><span class="leader"></span><span class="num">155-6765</span></div>
+      <div class="entry"><span class="name">Montemayor, Alvin</span><span class="leader"></span><span class="num">842-8031</span></div>
+      <div class="entry"><span class="name">Montemayor, Junjun</span><span class="leader"></span><span class="num">258-1341</span></div>
+      <div class="entry"><span class="name">Morales, Reymark</span><span class="leader"></span><span class="num">718-6590</span></div>
+      <div class="entry"><span class="name">Munoz, Ivan</span><span class="leader"></span><span class="num">117-8922</span></div>
+      <div class="entry"><span class="name">Munoz, Jea</span><span class="leader"></span><span class="num">104-4055</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; N &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Navarro, Love</span><span class="leader"></span><span class="num">320-4176</span></div></div>
+      <div class="entry"><span class="name">Nazareno, Jerome</span><span class="leader"></span><span class="num">865-9190</span></div>
+      <div class="entry"><span class="name">Nazareno, Jhanine</span><span class="leader"></span><span class="num">671-1494</span></div>
+      <div class="entry"><span class="name">Nazareno, Michael</span><span class="leader"></span><span class="num">322-2290</span></div>
+      <div class="entry"><span class="name">Nepomuceno, Diwata</span><span class="leader"></span><span class="num">137-4333</span></div>
+      <div class="entry"><span class="name">Nepomuceno, Ferdie</span><span class="leader"></span><span class="num">130-0685</span></div>
+      <div class="entry"><span class="name">Nepomuceno, Jayvee</span><span class="leader"></span><span class="num">462-3743</span></div>
+      <div class="entry"><span class="name">Nepomuceno, Vergel</span><span class="leader"></span><span class="num">179-2116</span></div>
+      <div class="entry"><span class="name">Nicolas, Cynthia</span><span class="leader"></span><span class="num">098-6105</span></div>
+      <div class="entry"><span class="name">Nicolas, Divine</span><span class="leader"></span><span class="num">983-5934</span></div>
+      <div class="entry"><span class="name">Nicolas, Ompong</span><span class="leader"></span><span class="num">190-9598</span></div>
+      <div class="entry"><span class="name">Nograles, Bogs</span><span class="leader"></span><span class="num">678-2141</span></div>
+      <div class="entry"><span class="name">Nograles, Krystal</span><span class="leader"></span><span class="num">161-7433</span></div>
+      <div class="entry"><span class="name">Nograles, Vhong</span><span class="leader"></span><span class="num">660-5427</span></div>
+      <div class="entry"><span class="name">Nolasco, Ferdie</span><span class="leader"></span><span class="num">093-3637</span></div>
+      <div class="entry"><span class="name">Nolasco, Jinggoy</span><span class="leader"></span><span class="num">603-6560</span></div>
+      <div class="entry"><span class="name">Noynay, Florendo</span><span class="leader"></span><span class="num">853-8900</span></div>
+      <div class="entry"><span class="name">Noynay, Kim</span><span class="leader"></span><span class="num">127-7679</span></div>
+      <div class="entry"><span class="name">Noynay, Odette</span><span class="leader"></span><span class="num">921-8479</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; O &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Ocampo, Florendo</span><span class="leader"></span><span class="num">425-7933</span></div></div>
+      <div class="entry"><span class="name">Ocampo, Juan</span><span class="leader"></span><span class="num">079-4681</span></div>
+      <div class="entry"><span class="name">Ocampo, Loida</span><span class="leader"></span><span class="num">034-9495</span></div>
+      <div class="entry"><span class="name">Ocampo, Manuel</span><span class="leader"></span><span class="num">342-7055</span></div>
+      <div class="entry"><span class="name">Olivar, Cherrie</span><span class="leader"></span><span class="num">967-5661</span></div>
+      <div class="entry"><span class="name">Olivar, Lualhati</span><span class="leader"></span><span class="num">627-8270</span></div>
+      <div class="entry"><span class="name">Oliveros, Jea</span><span class="leader"></span><span class="num">455-3868</span></div>
+      <div class="entry"><span class="name">Oliveros, Nova</span><span class="leader"></span><span class="num">781-1259</span></div>
+      <div class="entry"><span class="name">Ong, Archie</span><span class="leader"></span><span class="num">612-0797</span></div>
+      <div class="entry"><span class="name">Ong, Jenina</span><span class="leader"></span><span class="num">383-6408</span></div>
+      <div class="entry"><span class="name">Ong, Lito</span><span class="leader"></span><span class="num">617-6981</span></div>
+      <div class="entry"><span class="name">Orbeta, Rodel</span><span class="leader"></span><span class="num">570-9088</span></div>
+      <div class="entry"><span class="name">Orbeta, Rustom</span><span class="leader"></span><span class="num">630-0086</span></div>
+      <div class="entry"><span class="name">Orosa, Artemio</span><span class="leader"></span><span class="num">930-9366</span></div>
+      <div class="entry"><span class="name">Orosa, Cherrie</span><span class="leader"></span><span class="num">477-8476</span></div>
+      <div class="entry"><span class="name">Orosa, Orland</span><span class="leader"></span><span class="num">930-7253</span></div>
+      <div class="entry"><span class="name">Orosa, Sergio</span><span class="leader"></span><span class="num">265-4050</span></div>
+      <div class="entry"><span class="name">Ortega, Cherrie</span><span class="leader"></span><span class="num">176-7292</span></div>
+      <div class="entry"><span class="name">Ortega, Lualhati</span><span class="leader"></span><span class="num">278-3827</span></div>
+      <div class="entry"><span class="name">Ortega, Roxanne</span><span class="leader"></span><span class="num">038-0932</span></div>
+      <div class="entry"><span class="name">Osmena, Ariel</span><span class="leader"></span><span class="num">090-5153</span></div>
+      <div class="entry"><span class="name">Osmena, Donita</span><span class="leader"></span><span class="num">626-9975</span></div>
+      <div class="entry"><span class="name">Osmena, Edmund</span><span class="leader"></span><span class="num">377-4295</span></div>
+      <div class="entry"><span class="name">Osmena, Jose</span><span class="leader"></span><span class="num">292-6930</span></div>
+      <div class="entry"><span class="name">Osmena, Krystal</span><span class="leader"></span><span class="num">517-9919</span></div>
+      <div class="entry"><span class="name">Osmena, Laarni</span><span class="leader"></span><span class="num">074-0981</span></div>
+      <div class="entry"><span class="name">Osmena, Noel</span><span class="leader"></span><span class="num">973-7996</span></div>
+      <div class="entry"><span class="name">Osmena, Rhea</span><span class="leader"></span><span class="num">349-2578</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; P &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Pacheco, Edgardo</span><span class="leader"></span><span class="num">136-7612</span></div></div>
+      <div class="entry"><span class="name">Pacheco, Joel</span><span class="leader"></span><span class="num">865-4949</span></div>
+      <div class="entry"><span class="name">Pacheco, Onyok</span><span class="leader"></span><span class="num">955-5272</span></div>
+      <div class="entry"><span class="name">Pacheco, Romeo</span><span class="leader"></span><span class="num">000-7009</span></div>
+      <div class="entry"><span class="name">Padilla, Allan</span><span class="leader"></span><span class="num">636-9224</span></div>
+      <div class="entry"><span class="name">Padilla, Gina</span><span class="leader"></span><span class="num">579-8115</span></div>
+      <div class="entry"><span class="name">Padilla, Lea</span><span class="leader"></span><span class="num">323-1188</span></div>
+      <div class="entry"><span class="name">Padilla, Leizel</span><span class="leader"></span><span class="num">658-0510</span></div>
+      <div class="entry"><span class="name">Padilla, Virgie</span><span class="leader"></span><span class="num">989-3944</span></div>
+      <div class="entry"><span class="name">Pagcaliwagan, Joanna</span><span class="leader"></span><span class="num">354-2541</span></div>
+      <div class="entry"><span class="name">Palad, Emilio</span><span class="leader"></span><span class="num">186-0823</span></div>
+      <div class="entry"><span class="name">Palad, Genalyn</span><span class="leader"></span><span class="num">388-4422</span></div>
+      <div class="entry"><span class="name">Palad, Junjun</span><span class="leader"></span><span class="num">255-1235</span></div>
+      <div class="entry"><span class="name">Palad, Romeo</span><span class="leader"></span><span class="num">787-4616</span></div>
+      <div class="entry"><span class="name">Palanca, Jinggoy</span><span class="leader"></span><span class="num">583-9999</span></div>
+      <div class="entry"><span class="name">Palma, Jea</span><span class="leader"></span><span class="num">716-4198</span></div>
+      <div class="entry"><span class="name">Palma, Jhun-jhun</span><span class="leader"></span><span class="num">125-4382</span></div>
+      <div class="entry"><span class="name">Palma, Ma-anne</span><span class="leader"></span><span class="num">452-7244</span></div>
+      <div class="entry"><span class="name">Palma, Rosanna</span><span class="leader"></span><span class="num">321-6660</span></div>
+      <div class="entry"><span class="name">Palma, Susan</span><span class="leader"></span><span class="num">446-9707</span></div>
+      <div class="entry"><span class="name">Pamintuan, Gerald</span><span class="leader"></span><span class="num">941-2091</span></div>
+    </div>
+    <div class="page-num">5 / 8</div>
+    
+  </div>
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">P <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Pamintuan, Noel</span><span class="leader"></span><span class="num">822-9038</span></div></div>
+      <div class="entry"><span class="name">Panaligan, Cristina</span><span class="leader"></span><span class="num">356-6690</span></div>
+      <div class="entry"><span class="name">Panaligan, Kenneth</span><span class="leader"></span><span class="num">490-7216</span></div>
+      <div class="entry"><span class="name">Pangan, Susan</span><span class="leader"></span><span class="num">249-7483</span></div>
+      <div class="entry"><span class="name">Pascual, Elvis</span><span class="leader"></span><span class="num">156-7454</span></div>
+      <div class="entry"><span class="name">Pascual, Erwin</span><span class="leader"></span><span class="num">331-4064</span></div>
+      <div class="entry"><span class="name">Pascual, Johnrey</span><span class="leader"></span><span class="num">116-1070</span></div>
+      <div class="entry"><span class="name">Pastor, Bogs</span><span class="leader"></span><span class="num">867-6580</span></div>
+      <div class="entry"><span class="name">Pastor, Dranreb</span><span class="leader"></span><span class="num">936-3974</span></div>
+      <div class="entry"><span class="name">Pastor, Ivy</span><span class="leader"></span><span class="num">321-2910</span></div>
+      <div class="entry"><span class="name">Pastor, Jea</span><span class="leader"></span><span class="num">213-5455</span></div>
+      <div class="entry"><span class="name">Pastor, Jonalyn</span><span class="leader"></span><span class="num">219-3310</span></div>
+      <div class="entry"><span class="name">Pelaez, Leizel</span><span class="leader"></span><span class="num">250-6653</span></div>
+      <div class="entry"><span class="name">Pena, Allan</span><span class="leader"></span><span class="num">139-3196</span></div>
+      <div class="entry"><span class="name">Pena, Marlon</span><span class="leader"></span><span class="num">196-3711</span></div>
+      <div class="entry"><span class="name">Pena, Roel</span><span class="leader"></span><span class="num">029-6371</span></div>
+      <div class="entry"><span class="name">Peralta, Harold</span><span class="leader"></span><span class="num">650-8804</span></div>
+      <div class="entry"><span class="name">Peralta, Jeddah</span><span class="leader"></span><span class="num">224-4471</span></div>
+      <div class="entry"><span class="name">Perez, Jonalyn</span><span class="leader"></span><span class="num">989-8037</span></div>
+      <div class="entry"><span class="name">Perez, Ronilo</span><span class="leader"></span><span class="num">171-1354</span></div>
+      <div class="entry"><span class="name">Pineda, Ranilo</span><span class="leader"></span><span class="num">075-9453</span></div>
+      <div class="entry"><span class="name">Pineda, Rosanna</span><span class="leader"></span><span class="num">233-5829</span></div>
+      <div class="entry"><span class="name">Pizarro, Jhonel</span><span class="leader"></span><span class="num">026-5912</span></div>
+      <div class="entry"><span class="name">Pizarro, Leni</span><span class="leader"></span><span class="num">118-1592</span></div>
+      <div class="entry"><span class="name">Pizarro, Wilhelmina</span><span class="leader"></span><span class="num">093-0771</span></div>
+      <div class="entry"><span class="name">Polintan, Jhun</span><span class="leader"></span><span class="num">395-1847</span></div>
+      <div class="entry"><span class="name">Portugal, Chesca</span><span class="leader"></span><span class="num">466-8368</span></div>
+      <div class="entry"><span class="name">Portugal, Diosdado</span><span class="leader"></span><span class="num">144-5425</span></div>
+      <div class="entry"><span class="name">Portugal, Yolanda</span><span class="leader"></span><span class="num">477-1615</span></div>
+      <div class="entry"><span class="name">Prado, Fidel</span><span class="leader"></span><span class="num">955-4781</span></div>
+      <div class="entry"><span class="name">Prado, Jhun-jhun</span><span class="leader"></span><span class="num">653-9730</span></div>
+      <div class="entry"><span class="name">Prado, Jinky</span><span class="leader"></span><span class="num">563-5530</span></div>
+      <div class="entry"><span class="name">Prado, Kyla</span><span class="leader"></span><span class="num">421-9022</span></div>
+      <div class="entry"><span class="name">Prado, Rustan</span><span class="leader"></span><span class="num">900-5055</span></div>
+      <div class="entry"><span class="name">Prieto, Christian</span><span class="leader"></span><span class="num">763-5666</span></div>
+      <div class="entry"><span class="name">Prieto, Ranilo</span><span class="leader"></span><span class="num">041-0742</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; Q &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Quezon, Cynthia</span><span class="leader"></span><span class="num">656-2762</span></div></div>
+      <div class="entry"><span class="name">Quezon, Erwin</span><span class="leader"></span><span class="num">296-3836</span></div>
+      <div class="entry"><span class="name">Quezon, Pablo</span><span class="leader"></span><span class="num">540-6859</span></div>
+      <div class="entry"><span class="name">Quezon, Rosario</span><span class="leader"></span><span class="num">226-0710</span></div>
+      <div class="entry"><span class="name">Quezon, Sherilyn</span><span class="leader"></span><span class="num">941-8701</span></div>
+      <div class="entry"><span class="name">Quiambao, Claudine</span><span class="leader"></span><span class="num">661-2827</span></div>
+      <div class="entry"><span class="name">Quiambao, Jose</span><span class="leader"></span><span class="num">500-4114</span></div>
+      <div class="entry"><span class="name">Quimson, Cesar</span><span class="leader"></span><span class="num">663-5590</span></div>
+      <div class="entry"><span class="name">Quimson, Dennis</span><span class="leader"></span><span class="num">789-8843</span></div>
+      <div class="entry"><span class="name">Quimson, Lea</span><span class="leader"></span><span class="num">316-6691</span></div>
+      <div class="entry"><span class="name">Quimson, Marites</span><span class="leader"></span><span class="num">848-8351</span></div>
+      <div class="entry"><span class="name">Quimson, Michelle</span><span class="leader"></span><span class="num">075-5085</span></div>
+      <div class="entry"><span class="name">Quinto, Jerrick</span><span class="leader"></span><span class="num">002-0721</span></div>
+      <div class="entry"><span class="name">Quirino, Chesca</span><span class="leader"></span><span class="num">648-1868</span></div>
+      <div class="entry"><span class="name">Quirino, Christian</span><span class="leader"></span><span class="num">943-3329</span></div>
+      <div class="entry"><span class="name">Quirino, Jayson</span><span class="leader"></span><span class="num">484-2780</span></div>
+      <div class="entry"><span class="name">Quirino, Jenina</span><span class="leader"></span><span class="num">764-8499</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; R &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Rabago, Neneng</span><span class="leader"></span><span class="num">607-1786</span></div></div>
+      <div class="entry"><span class="name">Rabago, Nesty</span><span class="leader"></span><span class="num">820-2621</span></div>
+      <div class="entry"><span class="name">Ragasa, Josefa</span><span class="leader"></span><span class="num">921-1560</span></div>
+      <div class="entry"><span class="name">Ragasa, Ritchie</span><span class="leader"></span><span class="num">335-1421</span></div>
+      <div class="entry"><span class="name">Ramirez, Jinggoy</span><span class="leader"></span><span class="num">178-9042</span></div>
+      <div class="entry"><span class="name">Ramos, Jamila</span><span class="leader"></span><span class="num">621-8348</span></div>
+      <div class="entry"><span class="name">Ramos, Salve</span><span class="leader"></span><span class="num">467-2440</span></div>
+      <div class="entry"><span class="name">Ramos, Vhong</span><span class="leader"></span><span class="num">396-9202</span></div>
+      <div class="entry"><span class="name">Ranada, Juliet</span><span class="leader"></span><span class="num">496-3919</span></div>
+      <div class="entry"><span class="name">Rebong, Bogart</span><span class="leader"></span><span class="num">034-1217</span></div>
+      <div class="entry"><span class="name">Rebong, Claudine</span><span class="leader"></span><span class="num">998-5908</span></div>
+      <div class="entry"><span class="name">Rebong, Joyce</span><span class="leader"></span><span class="num">065-4308</span></div>
+      <div class="entry"><span class="name">Rebong, Pablo</span><span class="leader"></span><span class="num">326-6821</span></div>
+      <div class="entry"><span class="name">Rebong, Roi</span><span class="leader"></span><span class="num">535-9991</span></div>
+      <div class="entry"><span class="name">Recto, Carmen</span><span class="leader"></span><span class="num">557-8312</span></div>
+      <div class="entry"><span class="name">Recto, Christopher</span><span class="leader"></span><span class="num">457-8653</span></div>
+      <div class="entry"><span class="name">Recto, Dennis</span><span class="leader"></span><span class="num">932-7486</span></div>
+      <div class="entry"><span class="name">Recto, Tessie</span><span class="leader"></span><span class="num">683-5053</span></div>
+      <div class="entry"><span class="name">Regala, Charmaine</span><span class="leader"></span><span class="num">910-0197</span></div>
+      <div class="entry"><span class="name">Regala, Dakila</span><span class="leader"></span><span class="num">941-0697</span></div>
+      <div class="entry"><span class="name">Reodica, Cristina</span><span class="leader"></span><span class="num">220-6163</span></div>
+      <div class="entry"><span class="name">Reodica, Erap</span><span class="leader"></span><span class="num">375-6521</span></div>
+      <div class="entry"><span class="name">Reodica, Nico</span><span class="leader"></span><span class="num">513-4465</span></div>
+      <div class="entry"><span class="name">Resurreccion, Cesar</span><span class="leader"></span><span class="num">784-2060</span></div>
+      <div class="entry"><span class="name">Resurreccion, Melchor</span><span class="leader"></span><span class="num">438-6071</span></div>
+      <div class="entry"><span class="name">Resurreccion, Orland</span><span class="leader"></span><span class="num">720-3770</span></div>
+      <div class="entry"><span class="name">Resurreccion, Rigor</span><span class="leader"></span><span class="num">388-3762</span></div>
+      <div class="entry"><span class="name">Resurreccion, Rowena</span><span class="leader"></span><span class="num">350-8950</span></div>
+      <div class="entry"><span class="name">Reyes, Bonifacio</span><span class="leader"></span><span class="num">407-3568</span></div>
+      <div class="entry"><span class="name">Reyes, Girlie</span><span class="leader"></span><span class="num">746-4010</span></div>
+      <div class="entry"><span class="name">Reyes, Jhanine</span><span class="leader"></span><span class="num">244-5070</span></div>
+      <div class="entry"><span class="name">Reyes, Josefa</span><span class="leader"></span><span class="num">835-0916</span></div>
+      <div class="entry"><span class="name">Reynes, Dexter</span><span class="leader"></span><span class="num">191-5993</span></div>
+      <div class="entry"><span class="name">Reynes, Drexler</span><span class="leader"></span><span class="num">366-3401</span></div>
+      <div class="entry"><span class="name">Reynes, Flordeliza</span><span class="leader"></span><span class="num">334-6401</span></div>
+      <div class="entry"><span class="name">Reynes, Juan</span><span class="leader"></span><span class="num">293-0280</span></div>
+      <div class="entry"><span class="name">Rigor, Gwyneth</span><span class="leader"></span><span class="num">484-3948</span></div>
+      <div class="entry"><span class="name">Rigor, Jhoana</span><span class="leader"></span><span class="num">138-6367</span></div>
+      <div class="entry"><span class="name">Rigor, Rhea</span><span class="leader"></span><span class="num">765-8947</span></div>
+      <div class="entry"><span class="name">Rigor, Ryzza</span><span class="leader"></span><span class="num">821-3578</span></div>
+      <div class="entry"><span class="name">Rivera, Elpidio</span><span class="leader"></span><span class="num">256-2858</span></div>
+      <div class="entry"><span class="name">Rivera, Jhanine</span><span class="leader"></span><span class="num">222-0924</span></div>
+      <div class="entry"><span class="name">Rivera, Vicky</span><span class="leader"></span><span class="num">505-7172</span></div>
+      <div class="entry"><span class="name">Rizal, Trinidad</span><span class="leader"></span><span class="num">316-2876</span></div>
+      <div class="entry"><span class="name">Robles, Jovit</span><span class="leader"></span><span class="num">843-6010</span></div>
+      <div class="entry"><span class="name">Robles, Justine</span><span class="leader"></span><span class="num">577-0539</span></div>
+      <div class="entry"><span class="name">Robles, Shiela</span><span class="leader"></span><span class="num">800-7940</span></div>
+      <div class="entry"><span class="name">Roces, Grace</span><span class="leader"></span><span class="num">300-5262</span></div>
+      <div class="entry"><span class="name">Rodriguez, Ferdinand</span><span class="leader"></span><span class="num">962-9975</span></div>
+      <div class="entry"><span class="name">Rodriguez, Realyn</span><span class="leader"></span><span class="num">853-0006</span></div>
+      <div class="entry"><span class="name">Rodriguez, Ritchie</span><span class="leader"></span><span class="num">456-2607</span></div>
+      <div class="entry"><span class="name">Rojas, Aldrin</span><span class="leader"></span><span class="num">951-2587</span></div>
+      <div class="entry"><span class="name">Rojas, Rigor</span><span class="leader"></span><span class="num">338-5764</span></div>
+      <div class="entry"><span class="name">Rojas, Ronald</span><span class="leader"></span><span class="num">100-0828</span></div>
+      <div class="entry"><span class="name">Roldan, Amboy</span><span class="leader"></span><span class="num">417-1527</span></div>
+      <div class="entry"><span class="name">Roldan, Onyok</span><span class="leader"></span><span class="num">487-0919</span></div>
+      <div class="entry"><span class="name">Roldan, Ronald</span><span class="leader"></span><span class="num">722-7007</span></div>
+      <div class="entry"><span class="name">Romero, Jocelyn</span><span class="leader"></span><span class="num">615-9830</span></div>
+      <div class="entry"><span class="name">Romero, Joel</span><span class="leader"></span><span class="num">881-0188</span></div>
+      <div class="entry"><span class="name">Romero, Nova</span><span class="leader"></span><span class="num">956-1680</span></div>
+      <div class="entry"><span class="name">Romero, Salve</span><span class="leader"></span><span class="num">543-5632</span></div>
+      <div class="entry"><span class="name">Romero, Vivian</span><span class="leader"></span><span class="num">020-6397</span></div>
+      <div class="entry"><span class="name">Rosales, Elpidio</span><span class="leader"></span><span class="num">061-9608</span></div>
+      <div class="entry"><span class="name">Rosales, Glaiza</span><span class="leader"></span><span class="num">170-8022</span></div>
+      <div class="entry"><span class="name">Rosales, Juliet</span><span class="leader"></span><span class="num">010-8464</span></div>
+      <div class="entry"><span class="name">Rosales, Tintin</span><span class="leader"></span><span class="num">776-3937</span></div>
+      <div class="entry"><span class="name">Rosario, Junjun</span><span class="leader"></span><span class="num">305-3684</span></div>
+      <div class="entry"><span class="name">Rosario, Mark</span><span class="leader"></span><span class="num">961-5990</span></div>
+      <div class="entry"><span class="name">Rosario, Raffy</span><span class="leader"></span><span class="num">374-1479</span></div>
+      <div class="entry"><span class="name">Rosario, Reynaldo</span><span class="leader"></span><span class="num">542-2196</span></div>
+      <div class="entry"><span class="name">Roxas, Bituin</span><span class="leader"></span><span class="num">473-5049</span></div>
+      <div class="entry"><span class="name">Roxas, Loida</span><span class="leader"></span><span class="num">385-5381</span></div>
+    </div>
+    <div class="page-num">6 / 8</div>
+    <div class="margin-note">030-4478???</div>
+  </div>
+  </div>
+  <div class="sheet">
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">R <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Roxas, Vicky</span><span class="leader"></span><span class="num">853-5802</span></div></div>
+      <div class="entry"><span class="name">Ruiz, Janice</span><span class="leader"></span><span class="num">332-7837</span></div>
+      <div class="entry"><span class="name">Ruiz, Joy</span><span class="leader"></span><span class="num">712-4450</span></div>
+      <div class="entry"><span class="name">Ruiz, Pao</span><span class="leader"></span><span class="num">517-8109</span></div>
+      <div class="entry"><span class="name">Ruiz, Ysabel</span><span class="leader"></span><span class="num">108-5228</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; S &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Sabado, Esperanza</span><span class="leader"></span><span class="num">971-3084</span></div></div>
+      <div class="entry"><span class="name">Sabado, Kristine</span><span class="leader"></span><span class="num">803-4979</span></div>
+      <div class="entry"><span class="name">Sabado, Marites</span><span class="leader"></span><span class="num">042-0464</span></div>
+      <div class="entry"><span class="name">Sabado, Rubylyn</span><span class="leader"></span><span class="num">778-9494</span></div>
+      <div class="entry"><span class="name">Sabalvaro, Allan</span><span class="leader"></span><span class="num">885-0803</span></div>
+      <div class="entry"><span class="name">Sabalvaro, Drexler</span><span class="leader"></span><span class="num">801-0672</span></div>
+      <div class="entry"><span class="name">Sabalvaro, Elpidio</span><span class="leader"></span><span class="num">872-7951</span></div>
+      <div class="entry"><span class="name">Sabalvaro, Estelita</span><span class="leader"></span><span class="num">673-6566</span></div>
+      <div class="entry"><span class="name">Sabalvaro, May</span><span class="leader"></span><span class="num">514-5269</span></div>
+      <div class="entry"><span class="name">Sabalvaro, Rowena</span><span class="leader"></span><span class="num">249-3700</span></div>
+      <div class="entry"><span class="name">Saguisag, Jhun-jhun</span><span class="leader"></span><span class="num">854-6375</span></div>
+      <div class="entry"><span class="name">Saguisag, Pao</span><span class="leader"></span><span class="num">033-9913</span></div>
+      <div class="entry"><span class="name">Saguisag, Precious</span><span class="leader"></span><span class="num">033-2983</span></div>
+      <div class="entry"><span class="name">Salcedo, Jhun-jhun</span><span class="leader"></span><span class="num">426-3068</span></div>
+      <div class="entry"><span class="name">Salcedo, Jinggoy</span><span class="leader"></span><span class="num">533-2778</span></div>
+      <div class="entry"><span class="name">Salonga, Dexter</span><span class="leader"></span><span class="num">690-1889</span></div>
+      <div class="entry"><span class="name">Salvador, Andres</span><span class="leader"></span><span class="num">389-7814</span></div>
+      <div class="entry"><span class="name">Salvador, Erap</span><span class="leader"></span><span class="num">392-6931</span></div>
+      <div class="entry"><span class="name">Salvador, Jeddah</span><span class="leader"></span><span class="num">866-6363</span></div>
+      <div class="entry"><span class="name">Salvador, Love</span><span class="leader"></span><span class="num">439-9394</span></div>
+      <div class="entry"><span class="name">Salvador, Ming</span><span class="leader"></span><span class="num">302-4837</span></div>
+      <div class="flag-wrap"><svg class="ink-circle" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg"><path d="M6,20 C6,8 40,3 100,4 C165,5 195,10 194,21 C193,33 155,37 98,37 C42,37 6,32 6,20 Z"/></svg><div class="entry flagged"><span class="name">Samonte, Esperanza</span><span class="leader"></span><span class="num">647-4402</span></div></div>
+      <div class="entry"><span class="name">Samonte, Luzviminda</span><span class="leader"></span><span class="num">612-5253</span></div>
+      <div class="entry"><span class="name">Samonte, Malaya</span><span class="leader"></span><span class="num">738-5123</span></div>
+      <div class="entry"><span class="name">Samonte, Pau</span><span class="leader"></span><span class="num">194-4173</span></div>
+      <div class="entry"><span class="name">San Diego, Diwata</span><span class="leader"></span><span class="num">026-5111</span></div>
+      <div class="entry"><span class="name">San Diego, Jea</span><span class="leader"></span><span class="num">074-0742</span></div>
+      <div class="entry"><span class="name">San Diego, Joanna</span><span class="leader"></span><span class="num">608-0651</span></div>
+      <div class="entry"><span class="name">San Juan, Diosdado</span><span class="leader"></span><span class="num">752-5447</span></div>
+      <div class="entry"><span class="name">San Juan, Gloria</span><span class="leader"></span><span class="num">985-4349</span></div>
+      <div class="entry"><span class="name">San Juan, Malaya</span><span class="leader"></span><span class="num">002-1526</span></div>
+      <div class="entry"><span class="name">San Pedro, Jayvee</span><span class="leader"></span><span class="num">361-0797</span></div>
+      <div class="entry"><span class="name">San Pedro, Leizel</span><span class="leader"></span><span class="num">740-9386</span></div>
+      <div class="entry"><span class="name">San Pedro, Shiela</span><span class="leader"></span><span class="num">410-8755</span></div>
+      <div class="entry"><span class="name">San Pedro, Vergel</span><span class="leader"></span><span class="num">146-3804</span></div>
+      <div class="entry"><span class="name">Sanchez, Jopay</span><span class="leader"></span><span class="num">438-9560</span></div>
+      <div class="entry"><span class="name">Sanchez, Ming</span><span class="leader"></span><span class="num">238-2615</span></div>
+      <div class="entry"><span class="name">Sandoval, Janice</span><span class="leader"></span><span class="num">221-3817</span></div>
+      <div class="entry"><span class="name">Sandoval, Rhea</span><span class="leader"></span><span class="num">760-2531</span></div>
+      <div class="entry"><span class="name">Sangalang, Jessa</span><span class="leader"></span><span class="num">225-0117</span></div>
+      <div class="entry"><span class="name">Sangalang, Laarni</span><span class="leader"></span><span class="num">439-5003</span></div>
+      <div class="entry"><span class="name">Santiago, Consolacion</span><span class="leader"></span><span class="num">432-0520</span></div>
+      <div class="entry"><span class="name">Santiago, Noel</span><span class="leader"></span><span class="num">995-8083</span></div>
+      <div class="entry"><span class="name">Santillan, Cherry</span><span class="leader"></span><span class="num">707-3978</span></div>
+      <div class="entry"><span class="name">Santillan, Ivy</span><span class="leader"></span><span class="num">558-2947</span></div>
+      <div class="entry"><span class="name">Santillan, Rosanna</span><span class="leader"></span><span class="num">439-6370</span></div>
+      <div class="entry"><span class="name">Santo Domingo, Elpidio</span><span class="leader"></span><span class="num">725-1388</span></div>
+      <div class="entry"><span class="name">Santo Domingo, Liwayway</span><span class="leader"></span><span class="num">766-9325</span></div>
+      <div class="entry"><span class="name">Santo Domingo, Vener</span><span class="leader"></span><span class="num">631-3203</span></div>
+      <div class="entry"><span class="name">Santos, Angelo</span><span class="leader"></span><span class="num">485-4350</span></div>
+      <div class="entry"><span class="name">Santos, Justine</span><span class="leader"></span><span class="num">551-2758</span></div>
+      <div class="entry"><span class="name">Santos, Love</span><span class="leader"></span><span class="num">397-6431</span></div>
+      <div class="entry"><span class="name">Santos, Luzviminda</span><span class="leader"></span><span class="num">224-0480</span></div>
+      <div class="entry"><span class="name">Santos, Pablo</span><span class="leader"></span><span class="num">479-8669</span></div>
+      <div class="entry"><span class="name">Santos, Ricardo</span><span class="leader"></span><span class="num">065-6304</span></div>
+      <div class="entry"><span class="name">Sarmiento, Aiza</span><span class="leader"></span><span class="num">331-8005</span></div>
+      <div class="entry"><span class="name">Sarmiento, Christopher</span><span class="leader"></span><span class="num">040-7078</span></div>
+      <div class="entry"><span class="name">Sebastian, Jhanine</span><span class="leader"></span><span class="num">224-0326</span></div>
+      <div class="entry"><span class="name">Sebastian, Virgie</span><span class="leader"></span><span class="num">027-9195</span></div>
+      <div class="entry"><span class="name">Serrano, Mabel</span><span class="leader"></span><span class="num">256-0423</span></div>
+      <div class="entry"><span class="name">Sevilla, Reynaldo</span><span class="leader"></span><span class="num">610-3697</span></div>
+      <div class="entry"><span class="name">Sevilla, Roel</span><span class="leader"></span><span class="num">523-1894</span></div>
+      <div class="entry"><span class="name">Sibayan, Angelo</span><span class="leader"></span><span class="num">951-4381</span></div>
+      <div class="entry"><span class="name">Sibayan, Ma-anne</span><span class="leader"></span><span class="num">151-1076</span></div>
+      <div class="entry"><span class="name">Sicat, Allan</span><span class="leader"></span><span class="num">665-2688</span></div>
+      <div class="entry"><span class="name">Sicat, Glenda</span><span class="leader"></span><span class="num">876-6643</span></div>
+      <div class="entry"><span class="name">Sicat, Malaya</span><span class="leader"></span><span class="num">226-1035</span></div>
+      <div class="entry"><span class="name">Sicat, Ronilo</span><span class="leader"></span><span class="num">291-7355</span></div>
+      <div class="entry"><span class="name">Silang, Elpidio</span><span class="leader"></span><span class="num">905-1412</span></div>
+      <div class="entry"><span class="name">Silang, Leizel</span><span class="leader"></span><span class="num">826-8666</span></div>
+      <div class="entry"><span class="name">Silang, Lualhati</span><span class="leader"></span><span class="num">226-9265</span></div>
+      <div class="entry"><span class="name">Silva, Archie</span><span class="leader"></span><span class="num">634-4026</span></div>
+      <div class="entry"><span class="name">Silva, Noel</span><span class="leader"></span><span class="num">226-3590</span></div>
+      <div class="entry"><span class="name">Simbulan, Gerald</span><span class="leader"></span><span class="num">142-3385</span></div>
+      <div class="entry"><span class="name">Simbulan, Glenda</span><span class="leader"></span><span class="num">582-4930</span></div>
+      <div class="entry"><span class="name">Solano, Ariel</span><span class="leader"></span><span class="num">070-3846</span></div>
+      <div class="entry"><span class="name">Solano, Reynaldo</span><span class="leader"></span><span class="num">654-0496</span></div>
+      <div class="entry"><span class="name">Solis, Angelica</span><span class="leader"></span><span class="num">905-9198</span></div>
+      <div class="entry"><span class="name">Solis, Pablo</span><span class="leader"></span><span class="num">699-3945</span></div>
+      <div class="entry"><span class="name">Solis, Rechel</span><span class="leader"></span><span class="num">767-2532</span></div>
+      <div class="entry"><span class="name">Solis, Rosanna</span><span class="leader"></span><span class="num">054-5882</span></div>
+      <div class="entry"><span class="name">Sotto, Justine</span><span class="leader"></span><span class="num">696-1946</span></div>
+      <div class="entry"><span class="name">Sotto, Maria</span><span class="leader"></span><span class="num">321-2041</span></div>
+      <div class="entry"><span class="name">Sotto, Mark</span><span class="leader"></span><span class="num">709-6512</span></div>
+      <div class="entry"><span class="name">Suarez, Glenda</span><span class="leader"></span><span class="num">695-6999</span></div>
+      <div class="entry"><span class="name">Suarez, Janice</span><span class="leader"></span><span class="num">216-4335</span></div>
+      <div class="entry"><span class="name">Sumagaysay, Darlene</span><span class="leader"></span><span class="num">661-0645</span></div>
+      <div class="entry"><span class="name">Sumagaysay, Krystal</span><span class="leader"></span><span class="num">633-5925</span></div>
+      <div class="entry"><span class="name">Sumagaysay, Mabel</span><span class="leader"></span><span class="num">323-2473</span></div>
+      <div class="entry"><span class="name">Sumagaysay, Vergel</span><span class="leader"></span><span class="num">558-4745</span></div>
+      <div class="entry"><span class="name">Sunga, Jocelyn</span><span class="leader"></span><span class="num">821-8907</span></div>
+      <div class="entry"><span class="name">Suson, Ambrosio</span><span class="leader"></span><span class="num">527-9421</span></div>
+      <div class="entry"><span class="name">Suson, Benigno</span><span class="leader"></span><span class="num">662-5482</span></div>
+      <div class="entry"><span class="name">Suson, Shiela</span><span class="leader"></span><span class="num">186-2209</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; T &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Tabora, Gerlie</span><span class="leader"></span><span class="num">906-1453</span></div></div>
+      <div class="entry"><span class="name">Tabora, Roel</span><span class="leader"></span><span class="num">833-8056</span></div>
+      <div class="entry"><span class="name">Tabora, Rowel</span><span class="leader"></span><span class="num">680-5869</span></div>
+      <div class="entry"><span class="name">Tagle, Elpidio</span><span class="leader"></span><span class="num">268-2647</span></div>
+      <div class="entry"><span class="name">Tagle, Jerome</span><span class="leader"></span><span class="num">238-0860</span></div>
+      <div class="entry"><span class="name">Tagle, Pablo</span><span class="leader"></span><span class="num">962-6086</span></div>
+      <div class="entry"><span class="name">Tagle, Roxanne</span><span class="leader"></span><span class="num">260-7529</span></div>
+      <div class="entry"><span class="name">Talampas, Clarissa</span><span class="leader"></span><span class="num">549-8808</span></div>
+      <div class="entry"><span class="name">Talampas, Dranreb</span><span class="leader"></span><span class="num">938-4833</span></div>
+      <div class="entry"><span class="name">Talampas, Laarni</span><span class="leader"></span><span class="num">519-9977</span></div>
+      <div class="entry"><span class="name">Talampas, Lea</span><span class="leader"></span><span class="num">985-6951</span></div>
+      <div class="entry"><span class="name">Tamayo, Emilio</span><span class="leader"></span><span class="num">746-6887</span></div>
+      <div class="entry"><span class="name">Tamayo, Josefa</span><span class="leader"></span><span class="num">348-1827</span></div>
+      <div class="entry"><span class="name">Tan, Mark</span><span class="leader"></span><span class="num">179-7612</span></div>
+      <div class="entry"><span class="name">Tan, Queenie</span><span class="leader"></span><span class="num">469-2340</span></div>
+      <div class="entry"><span class="name">Tanchico, Cynthia</span><span class="leader"></span><span class="num">686-6937</span></div>
+      <div class="entry"><span class="name">Tanchico, Ivan</span><span class="leader"></span><span class="num">454-2110</span></div>
+      <div class="entry"><span class="name">Tanchico, Jhoana</span><span class="leader"></span><span class="num">375-5933</span></div>
+      <div class="entry"><span class="name">Tanchico, Sergio</span><span class="leader"></span><span class="num">728-8041</span></div>
+      <div class="entry"><span class="name">Tangco, Jerome</span><span class="leader"></span><span class="num">152-4352</span></div>
+      <div class="entry"><span class="name">Tangco, Maria</span><span class="leader"></span><span class="num">080-7369</span></div>
+      <div class="entry"><span class="name">Tanjuatco, Love</span><span class="leader"></span><span class="num">285-4089</span></div>
+      <div class="entry"><span class="name">Tanjuatco, Tessie</span><span class="leader"></span><span class="num">324-2854</span></div>
+      <div class="entry"><span class="name">Tantoco, Corazon</span><span class="leader"></span><span class="num">587-3804</span></div>
+      <div class="entry"><span class="name">Tantoco, Jose</span><span class="leader"></span><span class="num">215-9373</span></div>
+      <div class="entry"><span class="name">Tantoco, Sherilyn</span><span class="leader"></span><span class="num">204-4706</span></div>
+    </div>
+    <div class="page-num">7 / 8</div>
+    
+  </div>
+  <div class="panel">
+    <div class="panel-head small">PHONEBOOK DIRECTORY <span class="cont">(cont&rsquo;d)</span></div>
+    <div class="directory">
+      <div class="section-start"><div class="letter-header cont">T <span class="cont-tag">cont&rsquo;d</span></div><div class="entry"><span class="name">Tapia, Elvis</span><span class="leader"></span><span class="num">880-5697</span></div></div>
+      <div class="entry"><span class="name">Tapia, Rechel</span><span class="leader"></span><span class="num">957-7793</span></div>
+      <div class="entry"><span class="name">Teodoro, Cynthia</span><span class="leader"></span><span class="num">369-4102</span></div>
+      <div class="entry"><span class="name">Teodoro, Juliet</span><span class="leader"></span><span class="num">129-2174</span></div>
+      <div class="entry"><span class="name">Teodoro, Reymark</span><span class="leader"></span><span class="num">101-8017</span></div>
+      <div class="entry"><span class="name">Tolentino, Angel</span><span class="leader"></span><span class="num">405-4497</span></div>
+      <div class="entry"><span class="name">Tolentino, Elmer</span><span class="leader"></span><span class="num">486-9007</span></div>
+      <div class="entry"><span class="name">Torres, Araw</span><span class="leader"></span><span class="num">429-0256</span></div>
+      <div class="entry"><span class="name">Torres, Arman</span><span class="leader"></span><span class="num">344-2147</span></div>
+      <div class="entry"><span class="name">Torres, Dolly</span><span class="leader"></span><span class="num">887-0422</span></div>
+      <div class="entry"><span class="name">Torres, Estelita</span><span class="leader"></span><span class="num">533-3621</span></div>
+      <div class="entry"><span class="name">Torres, Ronald</span><span class="leader"></span><span class="num">434-7957</span></div>
+      <div class="entry"><span class="name">Trillana, Cristina</span><span class="leader"></span><span class="num">217-9783</span></div>
+      <div class="entry"><span class="name">Trillana, Kim</span><span class="leader"></span><span class="num">967-6561</span></div>
+      <div class="entry"><span class="name">Trillana, Lea</span><span class="leader"></span><span class="num">106-2200</span></div>
+      <div class="entry"><span class="name">Trillana, Lito</span><span class="leader"></span><span class="num">595-6046</span></div>
+      <div class="entry"><span class="name">Trinidad, Mila</span><span class="leader"></span><span class="num">963-6929</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; U &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Umali, Allan</span><span class="leader"></span><span class="num">836-9086</span></div></div>
+      <div class="entry"><span class="name">Umali, Jomar</span><span class="leader"></span><span class="num">009-7622</span></div>
+      <div class="entry"><span class="name">Uy, Junjun</span><span class="leader"></span><span class="num">497-3510</span></div>
+      <div class="entry"><span class="name">Uy, Marites</span><span class="leader"></span><span class="num">695-6624</span></div>
+      <div class="entry"><span class="name">Uy, Ranilo</span><span class="leader"></span><span class="num">097-3027</span></div>
+      <div class="entry"><span class="name">Uy, Renz</span><span class="leader"></span><span class="num">884-4065</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; V &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Valderrama, Cherry</span><span class="leader"></span><span class="num">652-6655</span></div></div>
+      <div class="entry"><span class="name">Valderrama, Elmer</span><span class="leader"></span><span class="num">719-8624</span></div>
+      <div class="entry"><span class="name">Valderrama, Janine</span><span class="leader"></span><span class="num">273-1169</span></div>
+      <div class="entry"><span class="name">Valderrama, Jopay</span><span class="leader"></span><span class="num">883-8019</span></div>
+      <div class="entry"><span class="name">Valderrama, Manuel</span><span class="leader"></span><span class="num">125-6730</span></div>
+      <div class="entry"><span class="name">Valdez, Andres</span><span class="leader"></span><span class="num">841-4415</span></div>
+      <div class="entry"><span class="name">Valdez, Claudine</span><span class="leader"></span><span class="num">137-5131</span></div>
+      <div class="entry"><span class="name">Valdez, Glaiza</span><span class="leader"></span><span class="num">722-4873</span></div>
+      <div class="entry"><span class="name">Valdez, Remedios</span><span class="leader"></span><span class="num">511-2280</span></div>
+      <div class="entry"><span class="name">Valenzuela, Bembol</span><span class="leader"></span><span class="num">083-4458</span></div>
+      <div class="entry"><span class="name">Valenzuela, Carmen</span><span class="leader"></span><span class="num">882-3853</span></div>
+      <div class="entry"><span class="name">Valenzuela, Diwata</span><span class="leader"></span><span class="num">239-7724</span></div>
+      <div class="entry"><span class="name">Vargas, Diwata</span><span class="leader"></span><span class="num">819-2692</span></div>
+      <div class="entry"><span class="name">Vargas, Joanna</span><span class="leader"></span><span class="num">402-8019</span></div>
+      <div class="entry"><span class="name">Vargas, Kim</span><span class="leader"></span><span class="num">559-2588</span></div>
+      <div class="entry"><span class="name">Vargas, Mila</span><span class="leader"></span><span class="num">790-4331</span></div>
+      <div class="entry"><span class="name">Vasquez, Fidel</span><span class="leader"></span><span class="num">460-6077</span></div>
+      <div class="entry"><span class="name">Vasquez, Joel</span><span class="leader"></span><span class="num">773-2240</span></div>
+      <div class="entry"><span class="name">Vasquez, Ramon</span><span class="leader"></span><span class="num">863-8785</span></div>
+      <div class="entry"><span class="name">Vasquez, Rubylyn</span><span class="leader"></span><span class="num">602-8199</span></div>
+      <div class="entry"><span class="name">Vega, Dennis</span><span class="leader"></span><span class="num">789-2252</span></div>
+      <div class="entry"><span class="name">Vega, Ferdie</span><span class="leader"></span><span class="num">248-0517</span></div>
+      <div class="entry"><span class="name">Vega, Joanna</span><span class="leader"></span><span class="num">772-9761</span></div>
+      <div class="entry"><span class="name">Vega, Rosa</span><span class="leader"></span><span class="num">946-9248</span></div>
+      <div class="entry"><span class="name">Vega, Zeny</span><span class="leader"></span><span class="num">455-0152</span></div>
+      <div class="entry"><span class="name">Velasco, Consolacion</span><span class="leader"></span><span class="num">990-5236</span></div>
+      <div class="entry"><span class="name">Velasco, Donabel</span><span class="leader"></span><span class="num">906-8797</span></div>
+      <div class="entry"><span class="name">Velasco, Marvin</span><span class="leader"></span><span class="num">780-0793</span></div>
+      <div class="entry"><span class="name">Velasquez, Jeddah</span><span class="leader"></span><span class="num">332-0916</span></div>
+      <div class="entry"><span class="name">Velasquez, Lea</span><span class="leader"></span><span class="num">847-1320</span></div>
+      <div class="entry"><span class="name">Velasquez, Remedios</span><span class="leader"></span><span class="num">503-6809</span></div>
+      <div class="entry"><span class="name">Velez, Charmaine</span><span class="leader"></span><span class="num">239-4334</span></div>
+      <div class="entry"><span class="name">Velez, Nova</span><span class="leader"></span><span class="num">645-1376</span></div>
+      <div class="entry"><span class="name">Velez, Ritchie</span><span class="leader"></span><span class="num">110-8032</span></div>
+      <div class="entry"><span class="name">Vergara, Jaica</span><span class="leader"></span><span class="num">931-2161</span></div>
+      <div class="entry"><span class="name">Vergara, Rosanna</span><span class="leader"></span><span class="num">608-7699</span></div>
+      <div class="entry"><span class="name">Vicencio, Gerlie</span><span class="leader"></span><span class="num">454-5759</span></div>
+      <div class="entry"><span class="name">Vicencio, Kenneth</span><span class="leader"></span><span class="num">027-4942</span></div>
+      <div class="entry"><span class="name">Vidal, Vergel</span><span class="leader"></span><span class="num">509-6018</span></div>
+      <div class="entry"><span class="name">Vidal, Vivian</span><span class="leader"></span><span class="num">428-8907</span></div>
+      <div class="entry"><span class="name">Vigilia, Pao</span><span class="leader"></span><span class="num">156-3505</span></div>
+      <div class="entry"><span class="name">Vigilia, Ricardo</span><span class="leader"></span><span class="num">135-7826</span></div>
+      <div class="entry"><span class="name">Villafuerte, Allan</span><span class="leader"></span><span class="num">351-1975</span></div>
+      <div class="entry"><span class="name">Villafuerte, Dexter</span><span class="leader"></span><span class="num">791-4941</span></div>
+      <div class="entry"><span class="name">Villafuerte, Ryzza</span><span class="leader"></span><span class="num">851-2273</span></div>
+      <div class="entry"><span class="name">Villamor, Heherson</span><span class="leader"></span><span class="num">244-9368</span></div>
+      <div class="entry"><span class="name">Villamor, Kristine</span><span class="leader"></span><span class="num">966-2068</span></div>
+      <div class="entry"><span class="name">Villamor, Lualhati</span><span class="leader"></span><span class="num">367-9692</span></div>
+      <div class="entry"><span class="name">Villamor, Vilma</span><span class="leader"></span><span class="num">690-7054</span></div>
+      <div class="entry"><span class="name">Villanueva, Leni</span><span class="leader"></span><span class="num">412-4460</span></div>
+      <div class="entry"><span class="name">Villanueva, Princess</span><span class="leader"></span><span class="num">851-5345</span></div>
+      <div class="entry"><span class="name">Villanueva, Reyland</span><span class="leader"></span><span class="num">917-6102</span></div>
+      <div class="entry"><span class="name">Villanueva, Rubylyn</span><span class="leader"></span><span class="num">309-6689</span></div>
+      <div class="entry"><span class="name">Villar, Allan</span><span class="leader"></span><span class="num">175-1354</span></div>
+      <div class="entry"><span class="name">Villar, Kaye</span><span class="leader"></span><span class="num">880-7438</span></div>
+      <div class="entry"><span class="name">Villareal, Aldrin</span><span class="leader"></span><span class="num">219-3371</span></div>
+      <div class="entry"><span class="name">Villareal, Antonio</span><span class="leader"></span><span class="num">717-5761</span></div>
+      <div class="entry"><span class="name">Villareal, Honeylet</span><span class="leader"></span><span class="num">071-0750</span></div>
+      <div class="entry"><span class="name">Villareal, Junjun</span><span class="leader"></span><span class="num">828-1025</span></div>
+      <div class="entry"><span class="name">Villareal, Mabel</span><span class="leader"></span><span class="num">299-4740</span></div>
+      <div class="entry"><span class="name">Villareal, Vilma</span><span class="leader"></span><span class="num">788-5095</span></div>
+      <div class="entry"><span class="name">Villaruel, Bogs</span><span class="leader"></span><span class="num">141-8498</span></div>
+      <div class="entry"><span class="name">Villaruel, Wilhelmina</span><span class="leader"></span><span class="num">279-6807</span></div>
+      <div class="entry"><span class="name">Villegas, Arvin</span><span class="leader"></span><span class="num">446-0027</span></div>
+      <div class="entry"><span class="name">Villegas, Charmaine</span><span class="leader"></span><span class="num">646-0964</span></div>
+      <div class="entry"><span class="name">Villegas, Rowena</span><span class="leader"></span><span class="num">156-7135</span></div>
+      <div class="entry"><span class="name">Villegas, Tintin</span><span class="leader"></span><span class="num">576-4911</span></div>
+      <div class="entry"><span class="name">Viray, Jhun</span><span class="leader"></span><span class="num">162-5091</span></div>
+      <div class="entry"><span class="name">Viray, Melchor</span><span class="leader"></span><span class="num">066-9011</span></div>
+      <div class="entry"><span class="name">Viray, Michael</span><span class="leader"></span><span class="num">624-7015</span></div>
+      <div class="entry"><span class="name">Viray, Realyn</span><span class="leader"></span><span class="num">655-6843</span></div>
+      <div class="entry"><span class="name">Vitug, Esperanza</span><span class="leader"></span><span class="num">286-1524</span></div>
+      <div class="entry"><span class="name">Vitug, Estelita</span><span class="leader"></span><span class="num">840-6525</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; Y &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Yabut, Darwin</span><span class="leader"></span><span class="num">665-5493</span></div></div>
+      <div class="entry"><span class="name">Yabut, Ivy</span><span class="leader"></span><span class="num">319-6537</span></div>
+      <div class="entry"><span class="name">Yabut, Joanna</span><span class="leader"></span><span class="num">075-1344</span></div>
+      <div class="entry"><span class="name">Yambao, Bonifacio</span><span class="leader"></span><span class="num">794-7498</span></div>
+      <div class="entry"><span class="name">Yambao, Ivan</span><span class="leader"></span><span class="num">665-8928</span></div>
+      <div class="entry"><span class="name">Yap, Imelda</span><span class="leader"></span><span class="num">713-6291</span></div>
+      <div class="entry"><span class="name">Yap, Janine</span><span class="leader"></span><span class="num">351-3335</span></div>
+      <div class="entry"><span class="name">Yap, Jhun-jhun</span><span class="leader"></span><span class="num">147-4772</span></div>
+      <div class="entry"><span class="name">Yap, Jonalyn</span><span class="leader"></span><span class="num">190-0230</span></div>
+      <div class="entry"><span class="name">Ybanez, Artemio</span><span class="leader"></span><span class="num">451-8951</span></div>
+      <div class="entry"><span class="name">Yulo, Aldous</span><span class="leader"></span><span class="num">896-4315</span></div>
+      <div class="entry"><span class="name">Yulo, Amboy</span><span class="leader"></span><span class="num">147-6717</span></div>
+      <div class="entry"><span class="name">Yulo, Gerald</span><span class="leader"></span><span class="num">448-0715</span></div>
+      <div class="entry"><span class="name">Yulo, Jerrick</span><span class="leader"></span><span class="num">052-9560</span></div>
+      <div class="entry"><span class="name">Yulo, Roi</span><span class="leader"></span><span class="num">713-7412</span></div>
+      <div class="entry"><span class="name">Yulo, Zaldy</span><span class="leader"></span><span class="num">265-2735</span></div>
+      <div class="section-start"><div class="letter-header">&#8212;&#8212;&#8212;&#8212;&#8212; Z &#8212;&#8212;&#8212;&#8212;&#8212;</div><div class="entry"><span class="name">Zamora, Elton</span><span class="leader"></span><span class="num">957-9355</span></div></div>
+      <div class="entry"><span class="name">Zamora, Juliet</span><span class="leader"></span><span class="num">603-8595</span></div>
+      <div class="entry"><span class="name">Zamora, Rodelyn</span><span class="leader"></span><span class="num">404-8128</span></div>
+      <div class="entry"><span class="name">Zapanta, Angelo</span><span class="leader"></span><span class="num">472-3434</span></div>
+      <div class="entry"><span class="name">Zapanta, Elmer</span><span class="leader"></span><span class="num">228-0056</span></div>
+      <div class="entry"><span class="name">Zapanta, Michael</span><span class="leader"></span><span class="num">981-2419</span></div>
+      <div class="entry"><span class="name">Zaragoza, Donita</span><span class="leader"></span><span class="num">145-5707</span></div>
+      <div class="entry"><span class="name">Zaragoza, May</span><span class="leader"></span><span class="num">805-5139</span></div>
+      <div class="entry"><span class="name">Zaragoza, Roel</span><span class="leader"></span><span class="num">976-3909</span></div>
+      <div class="entry"><span class="name">Zaragoza, Rustan</span><span class="leader"></span><span class="num">055-1612</span></div>
+      <div class="entry"><span class="name">Zobel, Nesty</span><span class="leader"></span><span class="num">134-1476</span></div>
+      <div class="entry"><span class="name">Zulueta, Glenn</span><span class="leader"></span><span class="num">534-4425</span></div>
+      <div class="entry"><span class="name">Zulueta, Irish</span><span class="leader"></span><span class="num">922-8954</span></div>
+    </div>
+    <div class="page-num">8 / 8</div>
+    
+  </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Tunable constants for call_simulator.html.
+# Edit values here, then rebuild the app (see README note in this repo /
+# ask Claude to rebuild) — these are baked into call_simulator.html at
+# build time, not read live.
+
+free_calls:
+  # Free calls per browser/device before the phone locks out (persisted in
+  # that device's localStorage).
+  max_per_device: 5
+  # Minutes to wait after hitting 0 before it resets back to max_per_device.
+  cooldown_minutes: 5
+
+ring:
+  # A call "rings" for a random duration in this range before it connects.
+  min_seconds: 2
+  max_seconds: 10
+
+# Secret code that instantly resets the free-call counter on the device that
+# dials it. Not shown anywhere in the phonebook, classifieds, or call
+# scripts — only the people who read this file (i.e. you) know it.
+reset_code: "9990666"
+
+# HTML shown on the result screen when the target number is dialed. HTML
+# tags are rendered (not escaped), so <strong>/<em>/<br>/<div> etc. all
+# work, same as the scripts in call_scripts.yaml. Edit the GM NOTE line
+# below to the real cure/formula/final clue for your game.
+
+# Genalyn Palad : 388-4422
+target_script: >-
+  Ano?! Nalason kayo? Oh eto ang cure diyan. Tumalon kayo ng 3 beses at sabay sabay isigaw ang DARNA!
