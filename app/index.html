@@ -64,9 +64,28 @@
       border-radius: 0;
       box-shadow: none;
       padding-top: env(safe-area-inset-top);
+    }
+    .screen {
+      border-radius: 0;
+      /* Safety net: mobile browser chrome (address bar / toolbar) shrinks
+         and grows unpredictably, so exact-fit sizing can't guarantee
+         everything stays on-screen. If content is ever taller than the
+         visible area, let it scroll instead of silently clipping off the
+         bottom edge (that clipped the call button before this fix). */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       padding-bottom: env(safe-area-inset-bottom);
     }
-    .screen { border-radius: 0; }
+    /* Shrink the dial pad's footprint so the call button fits without
+       needing that scroll fallback even when Safari's address bar + bottom
+       toolbar are both showing (a much shorter usable viewport than the
+       full screen height). The keypad was sized purely off page WIDTH
+       (fine on desktop/tall viewports), so on a short-but-wide phone
+       screen it could ask for more vertical space than was available. */
+    #view-dial { padding: 4px 20px 10px; }
+    .display-wrap { padding-top: 6px; min-height: 44px; }
+    .keypad { max-width: 300px; margin: 4px auto; gap: 8px; }
+    .dial-actions { margin-top: 4px; }
   }
   .screen {
     flex: 1;
