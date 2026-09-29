@@ -82,7 +82,7 @@
        full screen height). The keypad was sized purely off page WIDTH
        (fine on desktop/tall viewports), so on a short-but-wide phone
        screen it could ask for more vertical space than was available. */
-    #view-dial { padding: 4px 20px 10px; }
+    #view-dial { padding: 4px 20px 10px; align-items: center; }
     .display-wrap { padding-top: 6px; min-height: 44px; }
     .keypad { max-width: 300px; margin: 4px auto; gap: 8px; }
     .dial-actions { margin-top: 4px; }
@@ -699,7 +699,7 @@ function updateClock() {
   document.getElementById("clock").textContent = `${h}:${m}`;
 }
 updateClock();
-setInterval(updateClock, 30000);
+setInterval(updateClock, 1000);
 </script>
 </body>
 </html>
